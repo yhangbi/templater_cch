@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>แบบฟอร์มบันทึกการรักษา</title>
+<title>EMR Templater by yb</title>
 <style>
   :root {
     --blue: #1a6fa8;
@@ -266,13 +266,13 @@
 <div class="app-header">
   <div class="logo">🏥</div>
   <div>
-    <h1>แบบฟอร์มบันทึกการรักษา <small>v1.0</small></h1>
+    <h1>Templater by yb <small>v1.0</small></h1>
   </div>
 </div>
 
 <div class="tab-bar">
   <button class="tab-btn active" onclick="switchTab('opd', this)">📋 OPD / ผู้ป่วยนอก</button>
-  <button class="tab-btn" onclick="switchTab('ape', this)">🩺 ตรวจสุขภาพประจำปี</button>
+  <button class="tab-btn" onclick="switchTab('ape', this)">🩺 ตรวจสุขภาพประจำปี / ขอใบรับรองแพทย์ </button>
   <button class="tab-btn" onclick="switchTab('er', this)">🚨 ฉุกเฉิน / ER</button>
   <button class="tab-btn" onclick="switchTab('referral', this)">📨 ส่งตัวผู้ป่วย</button>
 </div>
@@ -283,11 +283,11 @@
   <div class="tab-panel active" id="tab-opd">
 
     <div class="card">
-      <div class="card-header">👤 ข้อมูลผู้ป่วย</div>
+      <div class="card-header">👤 Identification</div>
       <div class="card-body">
         <div class="grid-4" style="margin-bottom:10px">
-          <div class="field"><label>นามสกุล</label><input id="o-ln" type="text" placeholder=""></div>
           <div class="field"><label>ชื่อ</label><input id="o-fn" type="text" placeholder=""></div>
+          <div class="field"><label>นามสกุล</label><input id="o-ln" type="text" placeholder=""></div>
           <div class="field"><label>อายุ (ปี)</label><input id="o-age" type="number" placeholder=""></div>
           <div class="field"><label>เพศ</label>
             <select id="o-sex"><option value="">—</option><option value="ชาย">ชาย</option><option value="หญิง">หญิง</option></select>
@@ -298,8 +298,8 @@
           <div class="field"><label>แพทย์ผู้รักษา</label><input id="o-md" type="text" placeholder=""></div>
           <div class="field"><label>ประเภทการรับบริการ</label>
             <select id="o-vtype">
-              <option value="ติดตามการรักษา">ติดตามการรักษา</option>
               <option value="ผู้ป่วยใหม่">ผู้ป่วยใหม่</option>
+              <option value="ติดตามการรักษา">ติดตามการรักษา</option>
               <option value="การแพทย์ทางไกล">การแพทย์ทางไกล</option>
               <option value="หลังจำหน่ายออกจากโรงพยาบาล">หลังจำหน่ายออกจากโรงพยาบาล</option>
             </select>
@@ -309,13 +309,13 @@
     </div>
 
     <div class="card">
-      <div class="card-header">💓 สัญญาณชีพ</div>
+      <div class="card-header">💓 Vital  Signs</div>
       <div class="card-body">
         <div class="grid-5" style="margin-bottom:10px">
-          <div class="field"><label>BP (mmHg)</label><input id="o-bp" type="text" placeholder=""></div>
-          <div class="field"><label>HR (ครั้ง/นาที)</label><input id="o-hr" type="number" placeholder=""></div>
-          <div class="field"><label>RR (ครั้ง/นาที)</label><input id="o-rr" type="number" placeholder=""></div>
           <div class="field"><label>Temp (°C)</label><input id="o-temp" type="number" placeholder="" step="0.1"></div>
+          <div class="field"><label>HR (ครั้ง/นาที)</label><input id="o-hr" type="number" placeholder=""></div>
+          <div class="field"><label>BP (mmHg)</label><input id="o-bp" type="text" placeholder=""></div>
+          <div class="field"><label>RR (ครั้ง/นาที)</label><input id="o-rr" type="number" placeholder=""></div>
           <div class="field"><label>SpO₂ (%)</label><input id="o-spo2" type="number" placeholder=""></div>
         </div>
         <div class="grid-4">
@@ -337,11 +337,11 @@
     </div>
 
     <div class="card">
-      <div class="card-header">📝 อาการสำคัญและประวัติ</div>
+      <div class="card-header">📝 Present  Illness & Past History</div>
       <div class="card-body">
         <div class="grid-2" style="margin-bottom:10px">
-          <div class="field"><label>อาการสำคัญ (CC)</label><input id="o-cc" type="text" placeholder=""></div>
-          <div class="field"><label>ระยะเวลา / ความถี่</label><input id="o-duration" type="text" placeholder=""></div>
+          <div class="field"><label>Chief Complaint</label><input id="o-cc" type="text" placeholder=""></div>
+          <div class="field"><label>Duration</label><input id="o-duration" type="text" placeholder=""></div>
         </div>
         <div class="field">
           <label>ประวัติการเจ็บป่วยปัจจุบัน (HPI)</label>
@@ -357,27 +357,27 @@
           <label class="ncd-toggle" id="toggle-o-dlp">
             <input type="checkbox" onchange="toggleNCD('o','dlp')">
             <div class="ncd-dot"></div>
-            💜 ไขมันในเลือดผิดปกติ
+            💜 DLP
           </label>
           <label class="ncd-toggle" id="toggle-o-hpn">
             <input type="checkbox" onchange="toggleNCD('o','hpn')">
             <div class="ncd-dot"></div>
-            ❤️ ความดันโลหิตสูง
+            ❤️ HTN
           </label>
           <label class="ncd-toggle" id="toggle-o-dm">
             <input type="checkbox" onchange="toggleNCD('o','dm')">
             <div class="ncd-dot"></div>
-            🟡 เบาหวานชนิดที่ 2
+            🟡 T2DM
           </label>
           <label class="ncd-toggle" id="toggle-o-asthma">
             <input type="checkbox" onchange="toggleNCD('o','asthma')">
             <div class="ncd-dot"></div>
-            🔵 โรคหืด / COPD
+            🔵 Asthma / COPD
           </label>
           <label class="ncd-toggle" id="toggle-o-thyroid">
             <input type="checkbox" onchange="toggleNCD('o','thyroid')">
             <div class="ncd-dot"></div>
-            🟢 โรคต่อมไทรอยด์
+            🟢 Dysthyroidism
           </label>
         </div>
 
@@ -402,7 +402,7 @@
                 </select>
               </div>
             </div>
-            <div class="field"><label>ยาที่ใช้อยู่</label><input id="o-dlp-meds" type="text" placeholder=""></div>
+            <div class="field"><label>Current Medication</label><input id="o-dlp-meds" type="text" placeholder=""></div>
           </div>
         </div>
 
