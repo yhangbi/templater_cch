@@ -1,0 +1,3096 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Psychiatry Clinic — by yb</title>
+<style>
+
+  @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap');
+
+  @keyframes bgShift {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  @keyframes grainMove {
+    0%   { transform: translate(0,0); }
+    50%  { transform: translate(1%,0.5%); }
+    100% { transform: translate(0,0); }
+  }
+  @keyframes collapseBody {
+    from { opacity:1; transform:scaleY(1); }
+    to   { opacity:0; transform:scaleY(0); }
+  }
+  @keyframes expandBody {
+    from { opacity:0; transform:scaleY(0); }
+    to   { opacity:1; transform:scaleY(1); }
+  }
+
+  :root {
+    --accent:       #0e7490;
+    --accent-mid:   #06b6d4;
+    --accent-light: #e0f7fa;
+    --blue: #0e7490; --blue-light: #e0f7fa; --blue-mid: #06b6d4;
+    --green: #157a4e; --green-light: #e3f4ed;
+    --red:   #b83030; --red-light:  #fce8e8;
+    --orange:#c96e1a; --orange-light:#fef0e0;
+    --purple:#5c35a0; --purple-light:#ede8f8;
+    --gray-400:#b8bfcc; --gray-500:#8e98aa;
+    --gray-600:#5e6878; --gray-700:#3d4655;
+    --gray-800:#252d3a; --gray-900:#141a24;
+    --radius: 16px; --radius-sm: 10px; --radius-xs: 6px;
+
+    --glass-bg:       rgba(200,245,255,0.18);
+    --glass-border:   rgba(255,255,255,0.60);
+    --glass-blur:     blur(32px) saturate(200%);
+    --glass-inset:    inset 0 1.5px 0 rgba(255,255,255,0.75), inset 0 -1px 0 rgba(6,182,212,0.10);
+    --glass-inset-sm: inset 0 1px 0 rgba(255,255,255,0.65);
+    --glass-shadow:   0 8px 32px rgba(6,100,140,0.14), 0 2px 6px rgba(6,100,140,0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    background-repeat: repeat; background-size: 200px;
+    animation: grainMove 8s steps(1) infinite; opacity: 0.5;
+  }
+
+  body {
+    font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: linear-gradient(125deg,
+      #cffafe 0%, #a5f3fc 15%,
+      #e0f2fe 35%, #bfdbfe 52%,
+      #c7d2fe 68%, #ddd6fe 82%,
+      #cffafe 100%);
+    background-size: 300% 300%;
+    animation: bgShift 20s ease infinite;
+    color: var(--gray-800);
+    font-size: 18px;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  .app-header {
+    background: rgba(8, 70, 100, 0.60);
+    backdrop-filter: blur(36px) saturate(220%);
+    -webkit-backdrop-filter: blur(36px) saturate(220%);
+    color: white; padding: 18px 32px;
+    display: flex; align-items: center; gap: 14px;
+    position: sticky; top: 0; z-index: 100;
+    border-bottom: 1px solid rgba(165,243,252,0.30);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.20),
+                0 4px 24px rgba(6,100,140,0.25);
+  }
+  .app-header .logo { font-size: 28px; }
+  .app-header h1   { font-size: 22px; font-weight: 700; }
+  .app-header small{ font-size: 15px; opacity: 0.65; margin-left: 5px; }
+
+  /* ── Tab bar ── */
+  .tab-bar {
+    background: rgba(200,245,255,0.35);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border-bottom: 1px solid rgba(165,243,252,0.35);
+    display: flex; padding: 0 32px; overflow-x: auto;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.55),
+                0 2px 10px rgba(6,100,140,0.07);
+  }
+  .tab-btn {
+    padding: 16px 28px; border: none; background: none; cursor: pointer;
+    font-size: 17px; font-weight: 600; color: rgba(14,116,144,0.70);
+    border-bottom: 3px solid transparent; margin-bottom: -1px;
+    white-space: nowrap; transition: all 0.18s; font-family: inherit;
+  }
+  .tab-btn:hover  { color: var(--accent); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .main-content { max-width: 1100px; margin: 0 auto; padding: 28px 22px 100px; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Cards — liquid cyan glass ── */
+  .card {
+    position: relative;
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border-radius: var(--radius);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow), var(--glass-inset);
+    margin-bottom: 14px;
+    overflow: hidden;
+    transition: box-shadow 0.22s;
+  }
+  .card::before {
+    content: ''; position: absolute; inset: 0; border-radius: inherit;
+    background: linear-gradient(160deg,
+      rgba(255,255,255,0.60) 0%,
+      rgba(255,255,255,0.08) 45%,
+      rgba(6,182,212,0.05) 100%);
+    pointer-events: none; z-index: 0;
+  }
+  .card > * { position: relative; z-index: 1; }
+
+  /* ── Collapsible card header ── */
+  .card-header {
+    padding: 15px 22px; font-weight: 700; font-size: 16px; letter-spacing: 0.2px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.48) 0%, rgba(200,245,255,0.18) 100%);
+    border-bottom: 1px solid rgba(255,255,255,0.40);
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    color: var(--gray-700);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.18s;
+  }
+  .card-header:hover { background: linear-gradient(180deg, rgba(255,255,255,0.62) 0%, rgba(200,245,255,0.28) 100%); }
+  .card-header-left { display: flex; align-items: center; gap: 9px; }
+  .card-chevron {
+    font-size: 13px; color: var(--accent); opacity: 0.7;
+    transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+    margin-left: auto;
+  }
+  .card.collapsed .card-chevron { transform: rotate(-90deg); }
+
+  /* ── Collapsible body ── */
+  .card-body {
+    padding: 24px 26px;
+    transform-origin: top;
+    transition: max-height 0.30s cubic-bezier(0.4,0,0.2,1),
+                opacity 0.25s ease,
+                padding 0.25s ease;
+    max-height: 4000px;
+    opacity: 1;
+    overflow: hidden;
+  }
+  .card.collapsed .card-body {
+    max-height: 0;
+    opacity: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  /* ── Grids ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; }
+  .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+  @media (max-width: 640px) {
+    .grid-2, .grid-3, .grid-4, .grid-5 { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* ── Fields ── */
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 12.5px; font-weight: 700; color: rgba(14,116,144,0.75); text-transform: uppercase; letter-spacing: 0.5px; }
+  .field input, .field textarea, .field select {
+    border: 1px solid rgba(255,255,255,0.55);
+    border-bottom: 1.5px solid rgba(6,182,212,0.30);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px; font-size: 16px;
+    color: var(--gray-800);
+    background: rgba(255,255,255,0.32);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    transition: all 0.18s; width: 100%; font-family: inherit;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.65),
+                inset 0 -1px 0 rgba(6,182,212,0.08);
+  }
+  .field input:focus, .field textarea:focus, .field select:focus {
+    outline: none;
+    border-color: rgba(6,182,212,0.55);
+    background: rgba(255,255,255,0.65);
+    box-shadow: 0 0 0 3px rgba(6,182,212,0.18),
+                inset 0 1px 0 rgba(255,255,255,0.85);
+  }
+  .field textarea { resize: vertical; min-height: 80px; }
+
+  /* ── BMI ── */
+  .bmi-display {
+    font-size: 17px; font-weight: 700;
+    padding: 10px 16px; border-radius: var(--radius-sm);
+    background: rgba(255,255,255,0.30); border: 1px solid rgba(255,255,255,0.55);
+    text-align: center; min-height: 46px; margin-top: 28px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--glass-inset-sm);
+  }
+  .bmi-normal { background: rgba(21,122,78,0.15); color: var(--green); }
+  .bmi-over   { background: rgba(201,110,26,0.15); color: var(--orange); }
+  .bmi-obese  { background: rgba(184,48,48,0.12);  color: var(--red); }
+  .bmi-under  { background: rgba(6,182,212,0.12);  color: var(--accent); }
+
+  /* ── NCD toggles ── */
+  .ncd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 20px; }
+  .ncd-toggle {
+    display: flex; align-items: center; gap: 10px; padding: 14px 18px;
+    border: 1px solid rgba(255,255,255,0.52);
+    border-bottom: 1.5px solid rgba(6,182,212,0.20);
+    border-radius: var(--radius-sm);
+    background: rgba(255,255,255,0.22); backdrop-filter: blur(16px);
+    cursor: pointer; transition: all 0.18s;
+    user-select: none; font-size: 16px; font-weight: 600;
+    box-shadow: var(--glass-inset-sm), 0 2px 8px rgba(6,100,140,0.06);
+  }
+  .ncd-toggle:hover { background: rgba(255,255,255,0.42); }
+  .ncd-toggle.checked {
+    background: rgba(6,182,212,0.18);
+    border-color: rgba(6,182,212,0.50);
+    color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(6,182,212,0.15), var(--glass-inset-sm);
+  }
+  .ncd-toggle input[type=checkbox] { display: none; }
+  .ncd-dot {
+    width: 18px; height: 18px; border: 2px solid rgba(6,182,212,0.35);
+    border-radius: 5px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.35); transition: all 0.18s;
+  }
+  .ncd-toggle.checked .ncd-dot { background: var(--accent-mid); border-color: var(--accent-mid); }
+  .ncd-dot::after { content: "✓"; font-size: 12px; color: white; display: none; }
+  .ncd-toggle.checked .ncd-dot::after { display: block; }
+
+  /* ── NCD details ── */
+  .ncd-detail {
+    display: none; border: 1px solid rgba(255,255,255,0.50); border-radius: var(--radius-sm);
+    margin-bottom: 14px; overflow: hidden;
+    background: rgba(255,255,255,0.18); backdrop-filter: blur(20px);
+    box-shadow: var(--glass-inset-sm), 0 2px 12px rgba(6,100,140,0.07);
+  }
+  .ncd-detail.open { display: block; }
+  .ncd-detail-header { padding: 12px 20px; font-size: 15px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.3px; background: rgba(255,255,255,0.28); border-bottom: 1px solid rgba(255,255,255,0.35); }
+  .ncd-detail-body { padding: 18px 20px; display: flex; flex-direction: column; gap: 16px; }
+  .ncd-detail.dlp .ncd-detail-header { background: rgba(92,53,160,0.10); color: var(--purple); }
+  .ncd-detail.hpn .ncd-detail-header { background: rgba(184,48,48,0.10); color: var(--red); }
+  .ncd-detail.dm  .ncd-detail-header { background: rgba(201,110,26,0.10); color: var(--orange); }
+  .ncd-detail.asthma  .ncd-detail-header { background: rgba(6,182,212,0.10); color: var(--accent); }
+  .ncd-detail.thyroid .ncd-detail-header { background: rgba(21,122,78,0.10); color: var(--green); }
+
+  /* ── Radio opts ── */
+  .labs-toggle-row { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; flex-wrap: wrap; }
+  .radio-group { display: flex; gap: 10px; flex-wrap: wrap; }
+  .radio-opt {
+    display: flex; align-items: center; gap: 7px; cursor: pointer; font-size: 16px;
+    padding: 9px 20px;
+    border: 1px solid rgba(255,255,255,0.55);
+    border-bottom: 1.5px solid rgba(6,182,212,0.20);
+    border-radius: 30px;
+    background: rgba(255,255,255,0.22); backdrop-filter: blur(12px);
+    transition: all 0.18s; font-family: inherit;
+    box-shadow: var(--glass-inset-sm);
+  }
+  .radio-opt input { display: none; }
+  .radio-opt:has(input:checked) {
+    border-color: rgba(6,182,212,0.55);
+    background: rgba(6,182,212,0.18);
+    color: var(--accent); font-weight: 700;
+    box-shadow: 0 0 0 2px rgba(6,182,212,0.15), var(--glass-inset-sm);
+  }
+
+  /* ── Labs table ── */
+  .labs-table-wrapper { overflow-x: auto; border-radius: var(--radius-sm); overflow: hidden; }
+  .labs-table { width: 100%; border-collapse: collapse; font-size: 16px; }
+  .labs-table th { background: rgba(255,255,255,0.28); padding: 12px 16px; text-align: left; font-size: 13px; font-weight: 700; text-transform: uppercase; color: var(--gray-600); border-bottom: 1px solid rgba(255,255,255,0.42); }
+  .labs-table td { padding: 8px 9px; border-bottom: 1px solid rgba(255,255,255,0.28); }
+  .labs-table td input { width: 100%; border: 1px solid rgba(255,255,255,0.48); border-radius: var(--radius-xs); padding: 8px 12px; font-size: 16px; font-family: inherit; background: rgba(255,255,255,0.30); }
+  .labs-table td input:focus { outline: none; border-color: rgba(6,182,212,0.45); background: rgba(255,255,255,0.70); }
+  .labs-table tr:last-child td { border-bottom: none; }
+
+  /* ── Add lab btn ── */
+  .btn-add-lab {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.20); border: 1.5px dashed rgba(6,182,212,0.35);
+    border-radius: var(--radius-sm); padding: 9px 18px;
+    font-size: 15px; color: var(--gray-600);
+    cursor: pointer; margin-top: 10px; transition: all 0.18s; font-family: inherit;
+  }
+  .btn-add-lab:hover { border-color: var(--accent-mid); color: var(--accent); background: rgba(6,182,212,0.12); }
+
+  /* ── PE prompt ── */
+  .pe-section { margin-bottom: 20px; }
+  .pe-section-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: rgba(14,116,144,0.75); margin-bottom: 7px; }
+
+  /* ── Output area ── */
+  .output-area {
+    background: rgba(8,28,48,0.82); backdrop-filter: blur(16px);
+    color: #b2f0fb; border-radius: var(--radius-sm); padding: 22px;
+    font-family: 'Courier New', monospace; font-size: 15px; line-height: 2.0;
+    white-space: pre-wrap; min-height: 200px; max-height: 620px; overflow-y: auto;
+    border: 1px solid rgba(6,182,212,0.25);
+    box-shadow: inset 0 2px 12px rgba(0,0,0,0.25), inset 0 1px 0 rgba(6,182,212,0.15);
+  }
+  .output-area.empty { color: rgba(100,180,200,0.45); font-style: italic; font-family: inherit; }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 14px 28px; border-radius: 30px;
+    font-size: 17px; font-weight: 700;
+    cursor: pointer; border: none; transition: all 0.20s;
+    font-family: inherit; position: relative; overflow: hidden;
+  }
+  .btn::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.28) 0%, transparent 60%);
+    border-radius: inherit; pointer-events: none;
+  }
+  .btn-primary {
+    background: linear-gradient(160deg, rgba(8,130,160,0.90) 0%, rgba(6,90,120,0.95) 100%);
+    color: white; border: 1px solid rgba(165,243,252,0.35);
+    box-shadow: inset 0 2px 0 rgba(255,255,255,0.20), 0 4px 18px rgba(6,100,140,0.38);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: inset 0 2px 0 rgba(255,255,255,0.20), 0 8px 28px rgba(6,100,140,0.50); }
+  .btn-success {
+    background: linear-gradient(160deg, rgba(22,140,90,0.90) 0%, rgba(14,100,62,0.95) 100%);
+    color: white; border: 1px solid rgba(100,220,140,0.28);
+    box-shadow: inset 0 2px 0 rgba(255,255,255,0.18), 0 4px 16px rgba(21,122,78,0.32);
+  }
+  .btn-success:hover { transform: translateY(-2px); box-shadow: inset 0 2px 0 rgba(255,255,255,0.18), 0 8px 24px rgba(21,122,78,0.44); }
+  .btn-outline {
+    background: rgba(255,255,255,0.22); backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.55); color: var(--gray-700);
+    box-shadow: inset 0 2px 0 rgba(255,255,255,0.48), 0 2px 8px rgba(6,100,140,0.08);
+  }
+  .btn-outline:hover { background: rgba(6,182,212,0.15); border-color: rgba(6,182,212,0.42); color: var(--accent); transform: translateY(-1px); }
+  .btn-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+
+  /* ── Divider ── */
+  .section-divider {
+    display: flex; align-items: center; gap: 12px;
+    margin: 22px 0 14px; font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px; color: rgba(6,182,212,0.50);
+  }
+  .section-divider::before, .section-divider::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, rgba(6,182,212,0.28), transparent); }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed; bottom: 28px; right: 28px;
+    background: rgba(21,122,78,0.90); backdrop-filter: blur(16px); color: white;
+    padding: 14px 28px; border-radius: 30px; font-size: 17px; font-weight: 700;
+    box-shadow: 0 8px 30px rgba(21,122,78,0.35), inset 0 1px 0 rgba(255,255,255,0.25);
+    border: 1px solid rgba(255,255,255,0.25); display: none; z-index: 999; font-family: inherit;
+  }
+
+  /* ── Pills ── */
+  .pill-group { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pill {
+    padding: 8px 18px; border: 1px solid rgba(255,255,255,0.52);
+    border-bottom: 1.5px solid rgba(6,182,212,0.20);
+    border-radius: 30px; font-size: 15px; cursor: pointer;
+    background: rgba(255,255,255,0.22); backdrop-filter: blur(10px);
+    transition: all 0.18s; font-weight: 600; color: var(--gray-700);
+    font-family: inherit; box-shadow: var(--glass-inset-sm);
+  }
+  .pill:has(input:checked) { border-color: rgba(6,182,212,0.52); background: rgba(6,182,212,0.18); color: var(--accent); box-shadow: 0 0 0 2px rgba(6,182,212,0.15), var(--glass-inset-sm); }
+  .pill input { display: none; }
+
+  /* ── Check rows ── */
+  .check-row { display: flex; gap: 18px; flex-wrap: wrap; }
+  .check-item { display: flex; align-items: center; gap: 8px; font-size: 16px; cursor: pointer; }
+  .check-item input[type=checkbox] { width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent-mid); }
+
+  /* ── Urgency ── */
+  .urgency-row { display: flex; gap: 8px; }
+  .urgency-pill {
+    flex: 1; text-align: center; padding: 12px;
+    border: 1px solid rgba(255,255,255,0.50); border-radius: var(--radius-sm);
+    background: rgba(255,255,255,0.20); backdrop-filter: blur(10px);
+    font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.18s;
+    font-family: inherit; box-shadow: var(--glass-inset-sm);
+  }
+  .urgency-pill.routine:hover, .urgency-pill.routine.selected { border-color: rgba(21,122,78,0.42); background: rgba(21,122,78,0.15); color: var(--green); }
+  .urgency-pill.urgent:hover,  .urgency-pill.urgent.selected  { border-color: rgba(201,110,26,0.42); background: rgba(201,110,26,0.15); color: var(--orange); }
+  .urgency-pill.stat:hover,    .urgency-pill.stat.selected    { border-color: rgba(184,48,48,0.42);  background: rgba(184,48,48,0.15);  color: var(--red); }
+
+  .systems-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  /* ── Floating export panel ── */
+  .float-export-btn {
+    position: fixed; bottom: 32px; right: 32px; z-index: 200;
+    background: linear-gradient(160deg, rgba(8,130,160,0.85) 0%, rgba(6,90,120,0.92) 100%);
+    backdrop-filter: blur(20px); color: white;
+    border: 1px solid rgba(165,243,252,0.40); border-radius: 50px;
+    padding: 16px 28px; font-size: 17px; font-weight: 700; font-family: inherit;
+    cursor: pointer;
+    box-shadow: inset 0 2px 0 rgba(255,255,255,0.22), 0 8px 28px rgba(6,100,140,0.40);
+    display: flex; align-items: center; gap: 10px; transition: all 0.22s;
+  }
+  .float-export-btn:hover { transform: translateY(-3px); box-shadow: inset 0 2px 0 rgba(255,255,255,0.22), 0 14px 40px rgba(6,100,140,0.52); }
+  .float-export-btn.panel-open { background: linear-gradient(160deg, rgba(40,80,100,0.85) 0%, rgba(20,50,70,0.92) 100%); }
+
+  .export-panel {
+    position: fixed; top: 0; right: -500px; width: 480px; height: 100vh;
+    background: rgba(220,248,255,0.55);
+    backdrop-filter: blur(44px) saturate(220%);
+    -webkit-backdrop-filter: blur(44px) saturate(220%);
+    border-left: 1px solid rgba(255,255,255,0.60);
+    box-shadow: -8px 0 60px rgba(6,100,140,0.18), inset 1px 0 0 rgba(255,255,255,0.55);
+    z-index: 199; display: flex; flex-direction: column;
+    transition: right 0.34s cubic-bezier(0.4,0,0.2,1); overflow: hidden;
+  }
+  .export-panel.open { right: 0; }
+  .export-panel-header {
+    padding: 20px 24px 16px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(200,245,255,0.22) 100%);
+    border-bottom: 1px solid rgba(255,255,255,0.45);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
+    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+  }
+  .export-panel-title { font-size: 17px; font-weight: 700; color: var(--gray-700); display: flex; align-items: center; gap: 9px; }
+  .export-panel-close {
+    background: rgba(255,255,255,0.32); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.55); font-size: 20px; cursor: pointer;
+    color: var(--gray-500); line-height: 1; padding: 4px 10px; border-radius: 8px;
+    transition: all 0.15s; font-family: inherit;
+  }
+  .export-panel-close:hover { background: rgba(6,182,212,0.15); color: var(--gray-700); }
+  .export-panel-actions { padding: 14px 24px; display: flex; gap: 10px; flex-shrink: 0; border-bottom: 1px solid rgba(255,255,255,0.35); flex-wrap: wrap; }
+  .export-panel-output {
+    flex: 1; overflow-y: auto; padding: 20px 24px;
+    font-family: 'Courier New', monospace; font-size: 14px; line-height: 2.0;
+    white-space: pre-wrap; color: var(--gray-800); background: transparent;
+  }
+  .export-panel-output.empty { color: rgba(6,182,212,0.40); font-style: italic; font-family: inherit; font-size: 16px; display: flex; align-items: center; justify-content: center; text-align: center; padding-top: 48px; }
+
+  .export-overlay { position: fixed; inset: 0; background: rgba(6,50,80,0.12); backdrop-filter: blur(2px); z-index: 198; display: none; }
+  .export-overlay.show { display: block; }
+  @media (min-width: 1200px) {
+    .export-overlay { display: none !important; }
+    body.panel-open .main-content { margin-right: 490px; transition: margin-right 0.34s cubic-bezier(0.4,0,0.2,1); }
+  }
+  @media (max-width: 600px) { .export-panel { width: 100vw; right: -100vw; } }
+
+
+  .tab-more-toggle { color: var(--gray-400); font-style: italic; font-size: 15px; }
+  .tab-more-toggle.open { color: var(--accent); }
+  #tab-more-group { display: none; contents; }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(6,182,212,0.30); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(6,182,212,0.55); }
+
+  /* Psych-only: always use calm background */
+  body {
+    animation: none !important;
+    background: #e8ede8 !important;
+  }
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div class="logo">🧠</div>
+  <div>
+    <h1>Psychiatry Clinic <small>v1.6</small></h1><span style="font-size:13px;opacity:0.50;margin-left:12px">last edit 5/7/26 10:34 AM</span>
+  </div>
+</div>
+
+<div class="main-content">
+  <!-- ===== PSYCHIATRY ===== -->
+  <div class="tab-panel active" id="tab-psych">
+
+    <!-- Mode: New or F/U -->
+    <div style="background:rgba(255,255,255,0.28);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.55);border-radius:var(--radius);box-shadow:var(--glass-shadow);margin-bottom:14px;padding:16px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <span style="font-size:14px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.4px">Visit type</span>
+      <label class="radio-opt" style="font-size:16px;font-weight:700;"><input type="radio" name="psych-mode" value="new" checked> 🆕 New Patient</label>
+      <label class="radio-opt" style="font-size:16px;font-weight:700;"><input type="radio" name="psych-mode" value="fu"> 📋 Follow-up</label>
+    </div>
+
+    <!-- 1. IDENTIFICATION -->
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)"><div class="card-header-left">👤 Identification</div><span class="card-chevron">▾</span></div>
+      <div class="card-body">
+        <div class="grid-3" style="margin-bottom:12px">
+          <div class="field"><label>Gender</label>
+            <select id="ps-sex" onchange="toggleFemaleFields('ps')">
+              <option value="">—</option><option value="Male">Male</option><option value="Female">Female</option>
+            </select>
+          </div>
+          <div class="field"><label>Age</label><input id="ps-age" type="number" placeholder=""></div>
+          <div class="field"><label>Allergy (drug/food)</label><input id="ps-allergy" type="text" placeholder="NKDA"></div>
+        </div>
+        <!-- Female OB/GYN block -->
+        <div id="ps-obgyn-block" style="display:none;border:1.5px solid rgba(220,160,200,0.45);border-radius:var(--radius-sm);padding:14px;margin-bottom:12px;background:rgba(255,240,250,0.35);backdrop-filter:blur(8px)">
+          <div style="font-size:12.5px;font-weight:700;text-transform:uppercase;color:#9b4070;margin-bottom:10px">♀ Menstrual / Contraception</div>
+          <div class="grid-3">
+            <div class="field"><label>Menstrual status</label>
+              <select id="ps-menstrual-status">
+                <option value="">—</option>
+                <option value="Regular">Regular</option>
+                <option value="Irregular">Irregular</option>
+                <option value="Amenorrhea">Amenorrhea</option>
+                <option value="Menopause">Menopause</option>
+              </select>
+            </div>
+            <div class="field"><label>LMP</label><input id="ps-lmp" type="text" placeholder="mm/yy"></div>
+            <div class="field"><label>Contraception</label><input id="ps-contraception" type="text" placeholder="e.g. OCP, IUD, none"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 2. UNDERLYING DISEASE & PAST HISTORY -->
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)"><div class="card-header-left">🩺 Underlying Disease & Past History</div><span class="card-chevron">▾</span></div>
+      <div class="card-body">
+        <div class="field" style="margin-bottom:10px">
+          <label>Underlying medical conditions</label>
+          <input id="ps-pmhx-med" type="text" placeholder="e.g. HT, T2DM, HF, Epilepsy">
+        </div>
+        <div class="field" style="margin-bottom:10px">
+          <label>Past surgical history</label>
+          <input id="ps-pmhx-surg" type="text" placeholder="e.g. Appendectomy 2560, TURP 2562">
+        </div>
+        <div class="field" style="margin-bottom:10px">
+          <label>Family history</label>
+          <input id="ps-famhx" type="text" placeholder="e.g. DM (father), Schizophrenia (sibling)">
+        </div>
+        <div class="section-divider">Past Psychiatric History</div>
+        <div style="margin-bottom:10px">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:15px;font-weight:600">
+            <input type="checkbox" id="ps-pphx-any" onchange="togglePsychHx()" style="width:17px;height:17px;accent-color:var(--accent)">
+            Past psychiatric history present
+          </label>
+          <div style="font-size:12px;color:var(--gray-400);margin-top:3px;margin-left:27px;font-style:italic">Unchecked → "Denied past psychiatric history"</div>
+        </div>
+        <div id="ps-pphx-detail" style="display:none">
+          <div class="field" style="margin-bottom:10px">
+            <label>Previous diagnosis/es</label>
+            <input id="ps-pphx-dx" type="text" placeholder="e.g. MDD, GAD, Schizophrenia">
+          </div>
+          <div class="grid-3" style="margin-bottom:10px">
+            <div class="field"><label>Previous hospitalisations</label>
+              <select id="ps-pphx-admit">
+                <option value="">—</option><option value="None">None</option>
+                <option value="1 admission">1 admission</option>
+                <option value="2 admissions">2 admissions</option>
+                <option value="≥3 admissions">≥3 admissions</option>
+              </select>
+            </div>
+            <div class="field"><label>ECT</label>
+              <select id="ps-pphx-ect">
+                <option value="">—</option><option value="None">None</option>
+                <option value="ECT performed">ECT performed</option>
+              </select>
+            </div>
+            <div class="field"><label>Suicide attempt(s)</label>
+              <select id="ps-pphx-sa">
+                <option value="">—</option><option value="None">None</option>
+                <option value="1 attempt">1 attempt</option>
+                <option value="≥2 attempts">≥2 attempts</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Notes</label>
+            <textarea id="ps-pphx-notes" rows="2" placeholder="Previous therapists, treatment response, compliance..."></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. CURRENT MEDICATIONS -->
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)"><div class="card-header-left">💊 Current Medications</div><span class="card-chevron">▾</span></div>
+      <div class="card-body">
+        <div class="field" style="margin-bottom:10px">
+          <label>Psychotropic medications</label>
+          <textarea id="ps-meds-psych" rows="3" placeholder="e.g. Risperidone 2 mg ON&#10;Quetiapine 25 mg PRN&#10;Sertraline 50 mg OD"></textarea>
+        </div>
+        <div class="field">
+          <label>Other medications</label>
+          <input id="ps-meds-other" type="text" placeholder="e.g. Amlodipine 5 mg, Metformin 500 mg">
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. CC & PRESENT ILLNESS -->
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)"><div class="card-header-left">📝 Chief Complaint & Present Illness</div><span class="card-chevron">▾</span></div>
+      <div class="card-body">
+        <div class="grid-2" style="margin-bottom:10px">
+          <div class="field"><label>Chief Complaint</label><input id="ps-cc" type="text" placeholder=""></div>
+          <div class="field"><label>Duration of current episode</label><input id="ps-duration" type="text" placeholder="e.g. 3 weeks, insidious onset"></div>
+        </div>
+        <div class="field">
+          <label>History of Present Illness</label>
+          <textarea id="ps-hpi" rows="5" placeholder="Presenting symptoms, onset, precipitating factors, course, functional impairment..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. PERSONAL HISTORY -->
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)"><div class="card-header-left">🏠 Personal History</div><span class="card-chevron">▾</span></div>
+      <div class="card-body">
+        <div class="field" style="margin-bottom:10px">
+          <label>Substances <span style="font-weight:400;font-size:12px;color:var(--gray-500)">(smoking, alcohol, illicit drugs — type, amount, frequency, duration, last use)</span></label>
+          <textarea id="ps-ph-substance" rows="3" placeholder="Tobacco: __ pack/day × __ yr&#10;Alcohol: __ drinks/wk&#10;Illicit: cannabis / amphetamine / opioid / others — amount, route, last use"></textarea>
+        </div>
+        <div class="field" style="margin-bottom:10px">
+          <label>Housing & interpersonal relationships <span style="font-weight:400;font-size:12px;color:var(--gray-500)">(who lives at home, quality of relationships, support system)</span></label>
+          <textarea id="ps-ph-housing" rows="3" placeholder="Lives with: __ | Relationship quality: __ | Support system: __"></textarea>
+        </div>
+        <div class="field" style="margin-bottom:10px">
+          <label>Sleep hygiene <span style="font-weight:400;font-size:12px;color:var(--gray-500)">(sleep onset, duration, quality, disturbances, daytime function)</span></label>
+          <input id="ps-ph-sleep" type="text" placeholder="Onset: __ hr | Duration: __ hr | Quality: __ | Disturbances: __">
+        </div>
+        <div class="field" style="margin-bottom:10px">
+          <label>Occupational / educational history</label>
+          <input id="ps-ph-occ" type="text" placeholder="Current occupation, highest education, any changes due to illness">
+        </div>
+        <div class="field">
+          <label>Forensic / legal history</label>
+          <input id="ps-ph-legal" type="text" placeholder="e.g. None / Assault charge 2564 / Currently on probation">
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. PHYSICAL EXAMINATION -->
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)"><div class="card-header-left">💓 Physical Examination</div><span class="card-chevron">▾</span></div>
+      <div class="card-body">
+        <!-- Normal toggle -->
+        <div style="margin-bottom:12px">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:15px;font-weight:600">
+            <input type="checkbox" id="ps-pe-normal" onchange="togglePsychPENormal()" style="width:17px;height:17px;accent-color:var(--accent)">
+            ✅ All within normal limits
+          </label>
+        </div>
+        <div class="grid-5" style="margin-bottom:12px">
+          <div class="field"><label>HR (/min)</label><input id="ps-hr" type="number" placeholder=""></div>
+          <div class="field"><label>BP (mmHg)</label><input id="ps-bp" type="text" placeholder=""></div>
+          <div class="field"><label>RR (/min)</label><input id="ps-rr" type="number" placeholder=""></div>
+          <div class="field"><label>Temp (°C)</label><input id="ps-temp" type="number" placeholder="" step="0.1"></div>
+          <div class="field"><label>Weight (kg)</label><input id="ps-wt" type="number" placeholder="" step="0.1" oninput="calcBMI('ps')"></div>
+        </div>
+        <div class="grid-3" style="margin-bottom:12px">
+          <div class="field"><label>Height (cm)</label><input id="ps-ht" type="number" placeholder="" step="0.1" oninput="calcBMI('ps')"></div>
+          <div class="field"><label>BMI</label><div class="bmi-display" id="ps-bmi">—</div></div>
+          <div class="field"></div>
+        </div>
+        <div id="ps-pe-fields">
+        <div class="grid-2" style="margin-bottom:10px">
+          <div class="field"><label>GA</label><input id="ps-pe-gen" type="text" placeholder=""></div>
+          <div class="field"><label>CVS</label><input id="ps-pe-cvs" type="text" placeholder=""></div>
+        </div>
+        <div class="grid-2" style="margin-bottom:10px">
+          <div class="field"><label>RS</label><input id="ps-pe-resp" type="text" placeholder=""></div>
+          <div class="field"><label>Abd</label><input id="ps-pe-abd" type="text" placeholder=""></div>
+        </div>
+        <div class="grid-2">
+          <div class="field"><label>NS (Neuro)</label><input id="ps-pe-neuro" type="text" placeholder="e.g. CN intact, no focal deficit, no EPS"></div>
+          <div class="field"><label>Ext / Skin</label><input id="ps-pe-ext" type="text" placeholder="e.g. no needle marks, no self-harm scars"></div>
+        </div>
+        </div><!-- /ps-pe-fields -->
+      </div>
+    </div>
+
+    <!-- 8. MENTAL STATUS EXAMINATION -->
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)"><div class="card-header-left">🔍 Mental Status Examination (MSE)</div><span class="card-chevron">▾</span></div>
+      <div class="card-body">
+
+        <!-- ── General Appearance & Behaviour ── -->
+        <div style="border:1px solid rgba(255,255,255,0.40);border-radius:var(--radius-sm);padding:14px;margin-bottom:12px;background:rgba(255,255,255,0.14)">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--accent);letter-spacing:0.4px;margin-bottom:10px">General Appearance &amp; Behaviour</div>
+          <div class="field" style="margin-bottom:10px">
+            <textarea id="ps-mse-appearance" rows="2" placeholder="Apparel · Distractibility · Eye contact · Hygiene · Bizarre behaviour..."></textarea>
+          </div>
+          <div>
+            <div style="font-size:11.5px;font-weight:700;color:var(--gray-600);margin-bottom:6px">Psychomotor</div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-pm-ret" onchange="toggleMSECb('pm-ret')" style="accent-color:var(--accent);width:16px;height:16px"> Retardation</label>
+              <div id="ps-pm-ret-det" style="display:none;margin-left:24px"><select id="ps-pm-ret-sev" style="font-family:inherit;font-size:13px;padding:4px 8px;border:1px solid rgba(255,255,255,0.45);border-radius:6px;background:rgba(255,255,255,0.30)"><option value="mild">Mild</option><option value="moderate">Moderate</option><option value="severe">Severe</option></select></div>
+
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-pm-agi" onchange="toggleMSECb('pm-agi')" style="accent-color:var(--accent);width:16px;height:16px"> Agitation</label>
+              <div id="ps-pm-agi-det" style="display:none;margin-left:24px"><select id="ps-pm-agi-sev" style="font-family:inherit;font-size:13px;padding:4px 8px;border:1px solid rgba(255,255,255,0.45);border-radius:6px;background:rgba(255,255,255,0.30)"><option value="mild">Mild</option><option value="moderate">Moderate</option><option value="severe">Severe</option></select></div>
+
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-pm-cat" onchange="toggleMSECb('pm-cat')" style="accent-color:var(--accent);width:16px;height:16px"> Catatonia</label>
+              <div id="ps-pm-cat-det" style="display:none;margin-left:24px;display:flex;gap:10px;flex-wrap:wrap">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px"><input type="checkbox" id="ps-pm-cat-ex" style="accent-color:var(--accent)"> Excitement</label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px"><input type="checkbox" id="ps-pm-cat-st" style="accent-color:var(--accent)"> Stupor</label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px"><input type="checkbox" id="ps-pm-cat-po" style="accent-color:var(--accent)"> Posturing</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Mood & Affect ── -->
+        <div style="border:1px solid rgba(255,255,255,0.40);border-radius:var(--radius-sm);padding:14px;margin-bottom:12px;background:rgba(255,255,255,0.14)">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--accent);letter-spacing:0.4px;margin-bottom:10px">Mood &amp; Affect</div>
+          <div class="grid-2">
+            <div>
+              <div style="font-size:11.5px;font-weight:700;color:var(--gray-600);margin-bottom:6px">Mood</div>
+              <div style="display:flex;flex-direction:column;gap:5px">
+                <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-mood-dep" name="ps-mood" style="accent-color:var(--accent);width:15px;height:15px"> Depressed</label>
+                <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-mood-dys" name="ps-mood" style="accent-color:var(--accent);width:15px;height:15px"> Dysphoric</label>
+                <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-mood-eut" name="ps-mood" style="accent-color:var(--accent);width:15px;height:15px"> Euthymic</label>
+                <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-mood-ele" name="ps-mood" style="accent-color:var(--accent);width:15px;height:15px"> Elevated</label>
+                <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-mood-eup" name="ps-mood" style="accent-color:var(--accent);width:15px;height:15px"> Euphoric</label>
+                <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-mood-irr" name="ps-mood" style="accent-color:var(--accent);width:15px;height:15px"> Irritable</label>
+                <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-mood-exp" name="ps-mood" style="accent-color:var(--accent);width:15px;height:15px"> Expansive</label>
+                <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-mood-anx" name="ps-mood" style="accent-color:var(--accent);width:15px;height:15px"> Anxiety</label>
+                <div style="display:flex;align-items:center;gap:7px;margin-top:2px">
+                  <span style="font-size:13px;color:var(--gray-500)">&ldquo;</span>
+                  <input id="ps-mood-quote" type="text" placeholder="Patient's own words..." style="flex:1;border:1px solid rgba(255,255,255,0.45);border-radius:6px;padding:5px 9px;font-size:13px;background:rgba(255,255,255,0.30);font-family:inherit;font-style:italic">
+                  <span style="font-size:13px;color:var(--gray-500)">&rdquo;</span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:11.5px;font-weight:700;color:var(--gray-600);margin-bottom:6px">Affect</div>
+              <div style="display:flex;flex-direction:column;gap:5px">
+                <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-aff-res" style="accent-color:var(--accent);width:15px;height:15px"> Restricted</label>
+                <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-aff-blu" style="accent-color:var(--accent);width:15px;height:15px"> Blunted</label>
+                <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-aff-fla" style="accent-color:var(--accent);width:15px;height:15px"> Flat</label>
+                <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-aff-lab" style="accent-color:var(--accent);width:15px;height:15px"> Labile</label>
+                <div style="margin-top:8px;display:flex;gap:10px">
+                  <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="radio" name="ps-aff-cong" value="appropriate" style="accent-color:var(--accent)"> Appropriate</label>
+                  <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="radio" name="ps-aff-cong" value="inappropriate" style="accent-color:var(--accent)"> Inappropriate</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Speech ── -->
+        <div style="border:1px solid rgba(255,255,255,0.40);border-radius:var(--radius-sm);padding:14px;margin-bottom:12px;background:rgba(255,255,255,0.14)">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--accent);letter-spacing:0.4px;margin-bottom:10px">Speech</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-sp-pov" style="accent-color:var(--accent);width:15px;height:15px"> Poverty of speech</label>
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-sp-blo" style="accent-color:var(--accent);width:15px;height:15px"> Blocking</label>
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-sp-per" style="accent-color:var(--accent);width:15px;height:15px"> Perseveration</label>
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-sp-loa" style="accent-color:var(--accent);width:15px;height:15px"> Loosening of association</label>
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-sp-inc" style="accent-color:var(--accent);width:15px;height:15px"> Incoherence</label>
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-sp-foi" style="accent-color:var(--accent);width:15px;height:15px"> Flight of ideas</label>
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-sp-tan" style="accent-color:var(--accent);width:15px;height:15px"> Tangentiality</label>
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-sp-cir" style="accent-color:var(--accent);width:15px;height:15px"> Circumstantiality</label>
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-sp-ill" style="accent-color:var(--accent);width:15px;height:15px"> Illogicality</label>
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-sp-cla" style="accent-color:var(--accent);width:15px;height:15px"> Clanging</label>
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-sp-neo" style="accent-color:var(--accent);width:15px;height:15px"> Neologisms</label>
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-sp-pre" style="accent-color:var(--accent);width:15px;height:15px"> Pressure of speech</label>
+          </div>
+        </div>
+
+        <!-- ── Thought ── -->
+        <div style="border:1px solid rgba(255,255,255,0.40);border-radius:var(--radius-sm);padding:14px;margin-bottom:12px;background:rgba(255,255,255,0.14)">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--accent);letter-spacing:0.4px;margin-bottom:10px">Thought</div>
+          <div class="grid-2">
+            <div>
+              <div style="font-size:11.5px;font-weight:700;color:var(--gray-600);margin-bottom:6px">Flow of Thought</div>
+              <div style="display:flex;flex-direction:column;gap:5px">
+                <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-tf-rel" style="accent-color:var(--accent);width:15px;height:15px"> Relevant</label>
+                <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-tf-coh" style="accent-color:var(--accent);width:15px;height:15px"> Coherent</label>
+                <input id="ps-tf-notes" type="text" placeholder="additional notes..." style="margin-top:4px;font-size:13px;padding:5px 8px;border:1px solid rgba(255,255,255,0.40);border-radius:6px;background:rgba(255,255,255,0.28);font-family:inherit;width:100%">
+              </div>
+            </div>
+            <div>
+              <div style="font-size:11.5px;font-weight:700;color:var(--gray-600);margin-bottom:6px">Content of Thought</div>
+              <div style="display:flex;flex-direction:column;gap:5px">
+                <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-tc-pre" style="accent-color:var(--accent);width:15px;height:15px"> Preoccupation</label>
+                <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-tc-obs" style="accent-color:var(--accent);width:15px;height:15px"> Obsession</label>
+                <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-tc-pho" style="accent-color:var(--accent);width:15px;height:15px"> Phobia</label>
+                <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-tc-si" style="accent-color:var(--accent);width:15px;height:15px"> Suicidal ideation</label>
+                <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-tc-pdw" style="accent-color:var(--accent);width:15px;height:15px"> Passive death wish</label>
+                <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-tc-ov" style="accent-color:var(--accent);width:15px;height:15px"> Overvalued idea</label>
+                <input id="ps-tc-notes" type="text" placeholder="additional notes..." style="margin-top:4px;font-size:13px;padding:5px 8px;border:1px solid rgba(255,255,255,0.40);border-radius:6px;background:rgba(255,255,255,0.28);font-family:inherit;width:100%">
+              </div>
+            </div>
+          </div>
+          <!-- Delusions -->
+          <div style="margin-top:10px">
+            <div style="font-size:11.5px;font-weight:700;color:var(--gray-600);margin-bottom:6px">Delusions</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px">
+              <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-del-ref" style="accent-color:var(--accent);width:15px;height:15px"> Reference</label>
+              <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-del-fra" style="accent-color:var(--accent);width:15px;height:15px"> Fragmented</label>
+              <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-del-per" style="accent-color:var(--accent);width:15px;height:15px"> Persecutory</label>
+              <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-del-jea" style="accent-color:var(--accent);width:15px;height:15px"> Jealousy</label>
+              <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-del-ero" style="accent-color:var(--accent);width:15px;height:15px"> Erotomania</label>
+              <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-del-gra" style="accent-color:var(--accent);width:15px;height:15px"> Grandiose</label>
+              <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-del-biz" style="accent-color:var(--accent);width:15px;height:15px"> Bizarre</label>
+            </div>
+            <div style="margin-top:8px;display:flex;gap:12px">
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px"><input type="radio" name="ps-del-cong" value="mood-congruent" style="accent-color:var(--accent)"> Mood-congruent</label>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px"><input type="radio" name="ps-del-cong" value="mood-incongruent" style="accent-color:var(--accent)"> Mood-incongruent</label>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px"><input type="checkbox" id="ps-del-sys" style="accent-color:var(--accent)"> Systematized</label>
+            </div>
+            <div class="field" style="margin-top:8px">
+              <label style="font-size:11px">Delusion details</label>
+              <input id="ps-del-notes" type="text" placeholder="Describe content and context...">
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Perception ── -->
+        <div style="border:1px solid rgba(255,255,255,0.40);border-radius:var(--radius-sm);padding:14px;margin-bottom:12px;background:rgba(255,255,255,0.14)">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--accent);letter-spacing:0.4px;margin-bottom:10px">Perception</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-per-ah" onchange="toggleMSECb('per-ah')" style="accent-color:var(--accent);width:15px;height:15px"> Auditory hallucination (AH)</label>
+            <div id="ps-per-ah-det" style="display:none;margin-left:22px"><input id="ps-per-ah-txt" type="text" placeholder="e.g. 3rd person, command, derogatory, daily"></div>
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-per-vh" onchange="toggleMSECb('per-vh')" style="accent-color:var(--accent);width:15px;height:15px"> Visual hallucination (VH)</label>
+            <div id="ps-per-vh-det" style="display:none;margin-left:22px"><input id="ps-per-vh-txt" type="text" placeholder="e.g. sees people who are not present"></div>
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-per-oh" onchange="toggleMSECb('per-oh')" style="accent-color:var(--accent);width:15px;height:15px"> Olfactory hallucination (OH)</label>
+            <div id="ps-per-oh-det" style="display:none;margin-left:22px"><input id="ps-per-oh-txt" type="text" placeholder="e.g. burning smell without source"></div>
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-per-th" onchange="toggleMSECb('per-th')" style="accent-color:var(--accent);width:15px;height:15px"> Tactile hallucination (TH)</label>
+            <div id="ps-per-th-det" style="display:none;margin-left:22px"><input id="ps-per-th-txt" type="text" placeholder="e.g. crawling sensation on skin"></div>
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px"><input type="checkbox" id="ps-per-ill" onchange="toggleMSECb('per-ill')" style="accent-color:var(--accent);width:15px;height:15px"> Illusion</label>
+            <div id="ps-per-ill-det" style="display:none;margin-left:22px"><input id="ps-per-ill-txt" type="text" placeholder="e.g. misperceives rope as snake"></div>
+          </div>
+        </div>
+
+        <!-- ── Denied red flags strip ── -->
+        <div style="background:rgba(21,122,78,0.10);border:1.5px solid rgba(21,122,78,0.30);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:12px">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:15px;font-weight:700;color:var(--green)">
+            <input type="checkbox" id="ps-per-denied" style="accent-color:var(--green);width:17px;height:17px">
+            ✓ Denied red flags
+          </label>
+          <div style="font-size:12px;color:var(--gray-500);margin-top:4px;margin-left:27px">
+            Perception → <em>denied hallucinations</em> &nbsp;|&nbsp; Thought content → <em>denied suicidal ideations and passive death wish</em>
+          </div>
+        </div>
+
+        <!-- ── Cognition ── -->
+        <div style="border:1px solid rgba(255,255,255,0.40);border-radius:var(--radius-sm);padding:14px;margin-bottom:12px;background:rgba(255,255,255,0.14)">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--accent);letter-spacing:0.4px;margin-bottom:12px">Cognition</div>
+
+          <!-- Orientation -->
+          <div style="margin-bottom:12px">
+            <div style="font-size:11.5px;font-weight:700;color:var(--gray-600);margin-bottom:6px">Orientation</div>
+            <select id="ps-mse-orient" style="border:1px solid rgba(255,255,255,0.50);border-radius:var(--radius-sm);padding:9px 12px;font-size:14px;background:rgba(255,255,255,0.32);font-family:inherit;width:100%">
+              <option value="">—</option>
+              <option value="Fully oriented (time, place, person)">Fully oriented (time, place, person)</option>
+              <option value="Disoriented to time">Disoriented — time</option>
+              <option value="Disoriented to place">Disoriented — place</option>
+              <option value="Disoriented to person">Disoriented — person</option>
+              <option value="Disoriented to time and place">Disoriented — time + place</option>
+              <option value="Disoriented to all three">Disoriented — all three</option>
+            </select>
+          </div>
+
+          <!-- Concentration -->
+          <div style="margin-bottom:12px">
+            <div style="font-size:11.5px;font-weight:700;color:var(--gray-600);margin-bottom:8px">Attention &amp; Concentration</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px;min-width:120px"><input type="checkbox" id="ps-cog-100" style="accent-color:var(--accent);width:15px;height:15px"> 100 − 7 (×5)</label>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span style="font-size:13px;color:var(--gray-600)">Score</span>
+                  <input id="ps-cog-100-sc" type="number" min="0" max="5" placeholder="0–5" style="width:60px;font-size:13px;padding:4px 8px;border:1px solid rgba(255,255,255,0.45);border-radius:6px;background:rgba(255,255,255,0.30);font-family:inherit">
+                  <span style="font-size:13px;color:var(--gray-400)">/ 5</span>
+                </div>
+                <input id="ps-cog-100-note" type="text" placeholder="notes" style="flex:1;min-width:120px;font-size:13px;padding:4px 8px;border:1px solid rgba(255,255,255,0.40);border-radius:6px;background:rgba(255,255,255,0.28);font-family:inherit">
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px;min-width:120px"><input type="checkbox" id="ps-cog-20" style="accent-color:var(--accent);width:15px;height:15px"> 20 − 3 (×5)</label>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span style="font-size:13px;color:var(--gray-600)">Score</span>
+                  <input id="ps-cog-20-sc" type="number" min="0" max="5" placeholder="0–5" style="width:60px;font-size:13px;padding:4px 8px;border:1px solid rgba(255,255,255,0.45);border-radius:6px;background:rgba(255,255,255,0.30);font-family:inherit">
+                  <span style="font-size:13px;color:var(--gray-400)">/ 5</span>
+                </div>
+                <input id="ps-cog-20-note" type="text" placeholder="notes" style="flex:1;min-width:120px;font-size:13px;padding:4px 8px;border:1px solid rgba(255,255,255,0.40);border-radius:6px;background:rgba(255,255,255,0.28);font-family:inherit">
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px;min-width:160px"><input type="checkbox" id="ps-cog-days-fwd" style="accent-color:var(--accent);width:15px;height:15px"> Days of week (forward)</label>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span style="font-size:13px;color:var(--gray-600)">Score</span>
+                  <input id="ps-cog-days-fwd-sc" type="number" min="0" max="7" placeholder="0–7" style="width:60px;font-size:13px;padding:4px 8px;border:1px solid rgba(255,255,255,0.45);border-radius:6px;background:rgba(255,255,255,0.30);font-family:inherit">
+                  <span style="font-size:13px;color:var(--gray-400)">/ 7</span>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:14px;min-width:160px"><input type="checkbox" id="ps-cog-days-bwd" style="accent-color:var(--accent);width:15px;height:15px"> Days of week (backward)</label>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span style="font-size:13px;color:var(--gray-600)">Score</span>
+                  <input id="ps-cog-days-bwd-sc" type="number" min="0" max="7" placeholder="0–7" style="width:60px;font-size:13px;padding:4px 8px;border:1px solid rgba(255,255,255,0.45);border-radius:6px;background:rgba(255,255,255,0.30);font-family:inherit">
+                  <span style="font-size:13px;color:var(--gray-400)">/ 7</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Memory -->
+          <div style="margin-bottom:12px">
+            <div style="font-size:11.5px;font-weight:700;color:var(--gray-600);margin-bottom:8px">Memory</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div class="field"><label style="font-size:11px">Recent memory</label><input id="ps-mem-recent" type="text" placeholder="e.g. Recalls last meal, recent news intact"></div>
+              <div class="field"><label style="font-size:11px">Remote memory</label><input id="ps-mem-remote" type="text" placeholder="e.g. Recalls childhood events, historical dates intact"></div>
+            </div>
+            <div style="margin-top:10px;border:1px solid rgba(255,255,255,0.35);border-radius:8px;padding:10px 12px;background:rgba(255,255,255,0.10)">
+              <div style="font-size:11.5px;font-weight:700;color:var(--gray-600);margin-bottom:6px">Registration / Retention / Recall (3 objects)</div>
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <span style="font-size:13px;color:var(--gray-600)">Score</span>
+                <input id="ps-mem-reg" type="number" min="0" max="3" placeholder="" style="width:55px;font-size:14px;padding:5px 8px;border:1px solid rgba(255,255,255,0.45);border-radius:6px;background:rgba(255,255,255,0.30);font-family:inherit">
+                <span style="font-size:13px;color:var(--gray-400)">/ 3</span>
+                <input id="ps-mem-reg-note" type="text" placeholder="objects used..." style="flex:1;min-width:120px;font-size:13px;padding:5px 8px;border:1px solid rgba(255,255,255,0.40);border-radius:6px;background:rgba(255,255,255,0.28);font-family:inherit">
+              </div>
+            </div>
+          </div>
+
+          <!-- General Knowledge -->
+          <div style="margin-bottom:12px">
+            <div style="font-size:11.5px;font-weight:700;color:var(--gray-600);margin-bottom:8px">General Knowledge <span style="font-size:11px;font-weight:400;color:var(--gray-400)">(score / 3)</span></div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:13.5px;flex:1">ธงชาติไทยมีกี่สี</span>
+                <select id="ps-gk-1" style="font-family:inherit;font-size:13px;padding:4px 8px;border:1px solid rgba(255,255,255,0.45);border-radius:6px;background:rgba(255,255,255,0.30)"><option value="">—</option><option value="1">✓ Correct</option><option value="0">✗ Incorrect</option></select>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:13.5px;flex:1">วันสงกรานต์ตรงกับวันที่เท่าไร</span>
+                <select id="ps-gk-2" style="font-family:inherit;font-size:13px;padding:4px 8px;border:1px solid rgba(255,255,255,0.45);border-radius:6px;background:rgba(255,255,255,0.30)"><option value="">—</option><option value="1">✓ Correct</option><option value="0">✗ Incorrect</option></select>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:13.5px;flex:1">นายกรัฐมนตรีคนปัจจุบันชื่ออะไร</span>
+                <select id="ps-gk-3" style="font-family:inherit;font-size:13px;padding:4px 8px;border:1px solid rgba(255,255,255,0.45);border-radius:6px;background:rgba(255,255,255,0.30)"><option value="">—</option><option value="1">✓ Correct</option><option value="0">✗ Incorrect</option></select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Abstract Thinking -->
+          <div>
+            <div style="font-size:11.5px;font-weight:700;color:var(--gray-600);margin-bottom:8px">Abstract Thinking</div>
+            <div style="display:flex;flex-direction:column;gap:12px">
+
+              <div>
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gray-500);margin-bottom:6px">Difference (ความแตกต่าง)</div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <div style="display:flex;align-items:center;gap:8px"><span style="font-size:13.5px;min-width:180px">กลางวัน – กลางคืน</span><input id="ps-abs-d1" type="text" placeholder="patient's answer..." style="flex:1;font-size:13px;padding:5px 8px;border:1px solid rgba(255,255,255,0.40);border-radius:6px;background:rgba(255,255,255,0.28);font-family:inherit"></div>
+                  <div style="display:flex;align-items:center;gap:8px"><span style="font-size:13.5px;min-width:180px">ต้นมะเขือ – ต้นโพธิ์</span><input id="ps-abs-d2" type="text" placeholder="patient's answer..." style="flex:1;font-size:13px;padding:5px 8px;border:1px solid rgba(255,255,255,0.40);border-radius:6px;background:rgba(255,255,255,0.28);font-family:inherit"></div>
+                  <div style="display:flex;align-items:center;gap:8px"><span style="font-size:13.5px;min-width:180px">เด็ก – คนแคระ</span><input id="ps-abs-d3" type="text" placeholder="patient's answer..." style="flex:1;font-size:13px;padding:5px 8px;border:1px solid rgba(255,255,255,0.40);border-radius:6px;background:rgba(255,255,255,0.28);font-family:inherit"></div>
+                </div>
+              </div>
+
+              <div>
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gray-500);margin-bottom:6px">Similarity (ความเหมือน)</div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <div style="display:flex;align-items:center;gap:8px"><span style="font-size:13.5px;min-width:180px">ส้ม – กล้วย</span><input id="ps-abs-s1" type="text" placeholder="patient's answer..." style="flex:1;font-size:13px;padding:5px 8px;border:1px solid rgba(255,255,255,0.40);border-radius:6px;background:rgba(255,255,255,0.28);font-family:inherit"></div>
+                  <div style="display:flex;align-items:center;gap:8px"><span style="font-size:13.5px;min-width:180px">หนู – แมว</span><input id="ps-abs-s2" type="text" placeholder="patient's answer..." style="flex:1;font-size:13px;padding:5px 8px;border:1px solid rgba(255,255,255,0.40);border-radius:6px;background:rgba(255,255,255,0.28);font-family:inherit"></div>
+                  <div style="display:flex;align-items:center;gap:8px"><span style="font-size:13.5px;min-width:180px">รถ – เรือ</span><input id="ps-abs-s3" type="text" placeholder="patient's answer..." style="flex:1;font-size:13px;padding:5px 8px;border:1px solid rgba(255,255,255,0.40);border-radius:6px;background:rgba(255,255,255,0.28);font-family:inherit"></div>
+                </div>
+              </div>
+
+              <div>
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gray-500);margin-bottom:6px">Proverb (สุภาษิต)</div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <div style="display:flex;align-items:center;gap:8px"><span style="font-size:13.5px;min-width:180px">น้ำขึ้นให้รีบตัก</span><input id="ps-abs-p1" type="text" placeholder="patient's answer..." style="flex:1;font-size:13px;padding:5px 8px;border:1px solid rgba(255,255,255,0.40);border-radius:6px;background:rgba(255,255,255,0.28);font-family:inherit"></div>
+                  <div style="display:flex;align-items:center;gap:8px"><span style="font-size:13.5px;min-width:180px">หนีเสือปะจระเข้</span><input id="ps-abs-p2" type="text" placeholder="patient's answer..." style="flex:1;font-size:13px;padding:5px 8px;border:1px solid rgba(255,255,255,0.40);border-radius:6px;background:rgba(255,255,255,0.28);font-family:inherit"></div>
+                  <div style="display:flex;align-items:center;gap:8px"><span style="font-size:13.5px;min-width:180px">ขี่ช้างจับตั๊กแตน</span><input id="ps-abs-p3" type="text" placeholder="patient's answer..." style="flex:1;font-size:13px;padding:5px 8px;border:1px solid rgba(255,255,255,0.40);border-radius:6px;background:rgba(255,255,255,0.28);font-family:inherit"></div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ── Insight & Judgement ── -->
+        <div class="grid-2">
+          <div class="field">
+            <label>Insight <span style="font-size:11px;font-weight:400;color:var(--gray-500)">(awareness of illness and need for treatment)</span></label>
+            <select id="ps-mse-insight" style="border:1px solid rgba(255,255,255,0.50);border-radius:var(--radius-sm);padding:9px 12px;font-size:14px;background:rgba(255,255,255,0.32);font-family:inherit;width:100%">
+              <option value="">—</option>
+              <option value="Full insight">Full insight</option>
+              <option value="Partial insight">Partial insight</option>
+              <option value="No insight">No insight</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Judgement <span style="font-size:11px;font-weight:400;color:var(--gray-500)">(e.g. found a stamped letter on the street — what do you do?)</span></label>
+            <select id="ps-mse-judgement" style="border:1px solid rgba(255,255,255,0.50);border-radius:var(--radius-sm);padding:9px 12px;font-size:14px;background:rgba(255,255,255,0.32);font-family:inherit;width:100%">
+              <option value="">—</option>
+              <option value="Good judgement">Good judgement</option>
+              <option value="Fair judgement">Fair judgement</option>
+              <option value="Poor judgement">Poor judgement</option>
+            </select>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 9. RISK STRATIFICATION -->
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)"><div class="card-header-left">⚠️ Risk Stratification & Screening Tools</div><span class="card-chevron">▾</span></div>
+      <div class="card-body">
+
+        <div class="section-divider">Suicide / Self-harm risk</div>
+        <div class="grid-3" style="margin-bottom:10px">
+          <div class="field"><label>Suicidal ideation</label>
+            <select id="ps-risk-si">
+              <option value="">—</option>
+              <option value="Denies SI">Denies SI</option>
+              <option value="Passive SI">Passive SI (wish to die)</option>
+              <option value="Active SI — no plan">Active SI, no plan</option>
+              <option value="Active SI — with plan">Active SI, with plan</option>
+              <option value="Active SI — with intent">Active SI, with intent</option>
+            </select>
+          </div>
+          <div class="field"><label>Homicidal ideation</label>
+            <select id="ps-risk-hi">
+              <option value="">—</option>
+              <option value="Denies HI">Denies HI</option>
+              <option value="Passive HI">Passive HI</option>
+              <option value="Active HI — no plan">Active HI, no plan</option>
+              <option value="Active HI — with plan">Active HI, with plan</option>
+            </select>
+          </div>
+          <div class="field"><label>Overall risk level</label>
+            <select id="ps-risk-level">
+              <option value="">—</option>
+              <option value="Low risk">Low risk</option>
+              <option value="Moderate risk">Moderate risk</option>
+              <option value="High risk">High risk</option>
+              <option value="Imminent risk">Imminent risk</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="section-divider">Screening questionnaires</div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
+
+          <!-- 2Q -->
+          <div style="border:1px solid rgba(255,255,255,0.45);border-radius:var(--radius-sm);padding:12px 16px;background:rgba(255,255,255,0.18)">
+            <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px">2Q (Depression screen)</div>
+            <div class="grid-3">
+              <div class="field"><label>Score (0–2)</label><input id="ps-2q-score" type="number" min="0" max="2" placeholder=""></div>
+              <div class="field"><label>Result</label>
+                <select id="ps-2q-result"><option value="">—</option><option value="Negative (0)">Negative (0)</option><option value="Positive (≥1) → proceed to 9Q">Positive (≥1)</option></select>
+              </div>
+              <div class="field"><label>Date</label><input id="ps-2q-date" type="text" placeholder="mm/yy"></div>
+            </div>
+          </div>
+
+          <!-- 9Q -->
+          <div style="border:1px solid rgba(255,255,255,0.45);border-radius:var(--radius-sm);padding:12px 16px;background:rgba(255,255,255,0.18)">
+            <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px">9Q (PHQ-9 — Depression severity)</div>
+            <div class="grid-3">
+              <div class="field"><label>Score (0–27)</label><input id="ps-9q-score" type="number" min="0" max="27" placeholder=""></div>
+              <div class="field"><label>Severity</label>
+                <select id="ps-9q-result"><option value="">—</option><option value="Minimal (0–4)">Minimal (0–4)</option><option value="Mild (5–9)">Mild (5–9)</option><option value="Moderate (10–14)">Moderate (10–14)</option><option value="Moderately severe (15–19)">Mod-severe (15–19)</option><option value="Severe (20–27)">Severe (20–27)</option></select>
+              </div>
+              <div class="field"><label>Date</label><input id="ps-9q-date" type="text" placeholder="mm/yy"></div>
+            </div>
+          </div>
+
+          <!-- 8Q -->
+          <div style="border:1px solid rgba(255,255,255,0.45);border-radius:var(--radius-sm);padding:12px 16px;background:rgba(255,255,255,0.18)">
+            <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px">8Q (GAD-7 — Anxiety severity)</div>
+            <div class="grid-3">
+              <div class="field"><label>Score (0–21)</label><input id="ps-8q-score" type="number" min="0" max="21" placeholder=""></div>
+              <div class="field"><label>Severity</label>
+                <select id="ps-8q-result"><option value="">—</option><option value="Minimal (0–4)">Minimal (0–4)</option><option value="Mild (5–9)">Mild (5–9)</option><option value="Moderate (10–14)">Moderate (10–14)</option><option value="Severe (15–21)">Severe (15–21)</option></select>
+              </div>
+              <div class="field"><label>Date</label><input id="ps-8q-date" type="text" placeholder="mm/yy"></div>
+            </div>
+          </div>
+
+          <!-- Cognitive screens -->
+          <div style="border:1px solid rgba(255,255,255,0.45);border-radius:var(--radius-sm);padding:12px 16px;background:rgba(255,255,255,0.18)">
+            <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px">Cognitive screening <span style="font-weight:400;font-size:11px;color:var(--gray-500)">(MMSE max 30 · TMSE max 30 · MoCA max 30)</span></div>
+            <div class="grid-3">
+              <div class="field"><label>Tool used</label>
+                <select id="ps-cog-tool"><option value="">—</option><option value="MMSE">MMSE</option><option value="TMSE">TMSE</option><option value="MoCA">MoCA</option></select>
+              </div>
+              <div class="field"><label>Score (/30)</label><input id="ps-cog-score" type="number" min="0" max="30" placeholder=""></div>
+              <div class="field"><label>Date</label><input id="ps-cog-date" type="text" placeholder="mm/yy"></div>
+            </div>
+            <div class="field" style="margin-top:8px"><label>Interpretation / notes</label><input id="ps-cog-notes" type="text" placeholder="e.g. Mild cognitive impairment (cut-off 27); attention domain impaired"></div>
+          </div>
+
+          <!-- Other tools -->
+          <div class="field">
+            <label>Other questionnaires / scales</label>
+            <textarea id="ps-risk-other" rows="2" placeholder="e.g. PANSS total 68 (P: 22, N: 18, G: 28) — 01/68&#10;HAM-A score 18 (moderate) — 02/68&#10;Columbia SPI — 03/68"></textarea>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- 10. DIAGNOSIS & MANAGEMENT -->
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)"><div class="card-header-left">📋 Diagnosis and Management Plans</div><span class="card-chevron">▾</span></div>
+      <div class="card-body">
+        <div class="grid-2" style="margin-bottom:10px">
+          <div class="field"><label>Status</label>
+            <select id="ps-dx-status">
+              <option value="Provisional">Provisional</option>
+              <option value="Definitive">Definitive</option>
+              <option value="Rule out">Rule out</option>
+            </select>
+          </div>
+          <div class="field"><label>Diagnosis</label><input id="ps-dx" type="text" placeholder="e.g. Major Depressive Disorder (F32.2)"></div>
+        </div>
+        <div class="field" style="margin-bottom:14px">
+          <label>Additional diagnoses / differential</label>
+          <textarea id="ps-dx-extra" rows="2" placeholder="e.g. r/o Bipolar Disorder&#10;Comorbid GAD"></textarea>
+        </div>
+        <div class="section-divider">Management</div>
+        <div style="font-size:12.5px;font-weight:700;text-transform:uppercase;color:rgba(14,116,144,0.75);letter-spacing:0.4px;margin-bottom:8px">Management</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
+
+          <div style="border:1px solid rgba(255,255,255,0.45);border-radius:var(--radius-sm);padding:10px 14px;background:rgba(255,255,255,0.22)">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:15px;font-weight:600">
+              <input type="checkbox" id="ps-mx-lsm" style="width:17px;height:17px;accent-color:var(--accent)"> Advise LSM / psychoeducation
+            </label>
+          </div>
+          <div style="border:1px solid rgba(255,255,255,0.45);border-radius:var(--radius-sm);padding:10px 14px;background:rgba(255,255,255,0.22)">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:15px;font-weight:600">
+              <input type="checkbox" id="ps-mx-remed" style="width:17px;height:17px;accent-color:var(--accent)"> Remedication (same)
+            </label>
+          </div>
+          <div style="border:1px solid rgba(255,255,255,0.45);border-radius:var(--radius-sm);padding:10px 14px;background:rgba(255,255,255,0.22)">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:15px;font-weight:600">
+              <input type="checkbox" id="ps-mx-change" onchange="togglePsMx('change')" style="width:17px;height:17px;accent-color:var(--accent)"> Change / adjust medication
+            </label>
+            <div id="ps-mx-change-detail" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.30)">
+              <div class="field"><label>Details</label><input id="ps-mx-change-txt" type="text" placeholder="e.g. Increase Sertraline to 100 mg OD, add Quetiapine 50 mg ON"></div>
+            </div>
+          </div>
+          <div style="border:1px solid rgba(255,255,255,0.45);border-radius:var(--radius-sm);padding:10px 14px;background:rgba(255,255,255,0.22)">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:15px;font-weight:600">
+              <input type="checkbox" id="ps-mx-therapy" onchange="togglePsMx('therapy')" style="width:17px;height:17px;accent-color:var(--accent)"> Psychotherapy referral
+            </label>
+            <div id="ps-mx-therapy-detail" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.30)">
+              <div class="field"><label>Type</label><input id="ps-mx-therapy-txt" type="text" placeholder="e.g. CBT, DBT, supportive therapy, family therapy"></div>
+            </div>
+          </div>
+          <div style="border:1px solid rgba(255,255,255,0.45);border-radius:var(--radius-sm);padding:10px 14px;background:rgba(255,255,255,0.22)">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:15px;font-weight:600">
+              <input type="checkbox" id="ps-mx-admit" style="width:17px;height:17px;accent-color:var(--accent)"> Psychiatric admission
+            </label>
+          </div>
+          <div style="border:1px solid rgba(255,255,255,0.45);border-radius:var(--radius-sm);padding:10px 14px;background:rgba(255,255,255,0.22)">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:15px;font-weight:600">
+              <input type="checkbox" id="ps-mx-crisis" style="width:17px;height:17px;accent-color:var(--accent)"> Crisis / safety plan discussed
+            </label>
+          </div>
+
+        </div>
+        <div class="field" style="margin-bottom:12px">
+          <label>Additional management notes</label>
+          <textarea id="ps-mgmt-extra" rows="2" placeholder="Labs to order, referrals, other interventions..."></textarea>
+        </div>
+        <div class="field">
+          <label>Plan / Follow-up</label>
+          <textarea id="ps-plan" rows="2" placeholder="e.g. F/U 4 wk, F/U with 9Q, refer to OT"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Clear all button -->
+    <div style="text-align:center;margin-bottom:18px">
+      <button onclick="clearPsychForm()" style="background:linear-gradient(135deg,rgba(184,48,48,0.85),rgba(140,20,20,0.92));color:white;border:1px solid rgba(255,180,180,0.30);border-radius:50px;padding:16px 48px;font-size:17px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:inset 0 2px 0 rgba(255,255,255,0.15),0 4px 18px rgba(184,48,48,0.35);transition:all 0.2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+        🗑 Clear all fields
+      </button>
+    </div>
+
+    <!-- hidden output -->
+    <div class="card" style="display:none">
+      <div class="card-header" onclick="toggleCard(this)"><div class="card-header-left">📄 Export</div><span class="card-chevron">▾</span></div>
+      <div class="card-body" style="display:none">
+        <div class="output-area empty" id="output-psych"></div>
+      </div>
+    </div>
+
+  </div><!-- end PSYCH -->
+</div>
+
+<!-- Floating export panel -->
+<div class="export-overlay" id="export-overlay" onclick="closeExportPanel()"></div>
+
+<div class="export-panel" id="export-panel">
+  <div class="export-panel-header">
+    <div class="export-panel-title">📄 Export preview</div>
+    <button class="export-panel-close" onclick="closeExportPanel()">✕</button>
+  </div>
+  <div class="export-panel-actions">
+    <button class="btn btn-primary" id="panel-gen-btn" onclick="panelGenerate()" style="padding:10px 18px;font-size:15px">⚡ Generate</button>
+    <button class="btn btn-success" id="panel-copy-btn" onclick="panelCopy()" style="padding:10px 18px;font-size:15px">📋 Copy</button>
+    <button class="btn btn-outline" onclick="panelClear()" style="padding:10px 18px;font-size:15px">🗑 Clear</button>
+  </div>
+  <div class="export-panel-output empty" id="panel-output">
+    Click ⚡ Generate to preview your note here
+  </div>
+</div>
+
+<button class="float-export-btn" id="float-export-btn" onclick="toggleExportPanel()">
+  📄 Export
+</button>
+
+
+<!-- On-call specialist floating panel -->
+<div id="oncall-panel" style="position:fixed;bottom:110px;right:32px;z-index:210;width:340px;max-height:70vh;overflow-y:auto;background:rgba(220,248,255,0.75);backdrop-filter:blur(32px) saturate(200%);border:1px solid rgba(255,255,255,0.60);border-radius:var(--radius);box-shadow:0 8px 40px rgba(6,100,140,0.22),inset 0 1px 0 rgba(255,255,255,0.60);display:none;transition:all 0.22s">
+  <div style="padding:14px 18px 10px;border-bottom:1px solid rgba(255,255,255,0.40);display:flex;align-items:center;justify-content:space-between">
+    <span style="font-size:14px;font-weight:700;color:var(--gray-700)">📋 On-call contacts</span>
+    <button onclick="toggleOncallPanel()" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--gray-500);font-family:inherit;line-height:1">✕</button>
+  </div>
+  <div id="et-consult-contacts" style="padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:7px"></div>
+  <div style="padding:0 14px 10px">
+    <button onclick="toggleAddContact()" style="width:100%;font-size:13px;font-weight:700;padding:7px 0;border-radius:20px;border:1.5px dashed rgba(6,182,212,0.35);background:transparent;color:var(--accent);cursor:pointer;font-family:inherit">+ Add contact</button>
+    <div id="et-contact-editor" style="display:none;margin-top:8px;border:1px solid rgba(255,255,255,0.45);border-radius:var(--radius-sm);padding:10px;background:rgba(255,255,255,0.20)">
+      <div class="grid-3" style="margin-bottom:8px">
+        <div class="field"><label>Specialty</label><input id="et-new-spec" type="text" placeholder="Surgery"></div>
+        <div class="field"><label>Name</label><input id="et-new-name" type="text" placeholder="Dr. X"></div>
+        <div class="field"><label>Phone</label><input id="et-new-phone" type="tel" placeholder="08x-xxx-xxxx"></div>
+      </div>
+      <button onclick="addConsultContact()" style="font-size:13px;font-weight:700;padding:6px 16px;border-radius:20px;border:none;background:var(--accent);color:white;cursor:pointer;font-family:inherit">Add</button>
+    </div>
+  </div>
+</div>
+
+<button id="oncall-toggle-btn" onclick="toggleOncallPanel()" style="display:none;position:fixed;bottom:110px;right:32px;z-index:211;background:linear-gradient(160deg,rgba(8,130,160,0.85),rgba(6,90,120,0.92));color:white;border:1px solid rgba(165,243,252,0.35);border-radius:50px;padding:12px 20px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:inset 0 2px 0 rgba(255,255,255,0.20),0 4px 18px rgba(6,100,140,0.38)">
+  📋 On-call
+</button>
+
+
+<div id="toast" class="toast">✅ Copied!</div>
+
+<script>
+
+// ============================================================
+// TABS
+// ============================================================
+
+
+
+// ── Trauma Primary Survey auto-normal fillers ──────────────────────────────
+function autoPS_X() {
+  document.getElementById('et-x').value = 'no exsanguination';
+}
+
+function autoPS_A() {
+  const spo2 = document.getElementById('et-spo2').value || '___';
+  const o2El = document.getElementById('et-o2');
+  const o2 = o2El.value || 'room air';
+  document.getElementById('et-airway-notes').value =
+    `can talk, airway patent, no stridor, spontaneous neck movement, C-spine not tender, SpO\u2082 ${spo2}% on ${o2}`;
+}
+
+function autoPS_B() {
+  const rr = document.getElementById('et-rr').value || '___';
+  document.getElementById('et-bs').value = 'clear, equal bilaterally';
+  document.getElementById('et-breathing-notes').value =
+    `RR ${rr} /min, tracheal in midline, CCT -ve, no dullness or hyperresonance on percussion, clear, equal BS`;
+}
+
+function autoPS_C() {
+  const hr = document.getElementById('et-hr').value || '___';
+  const bp = document.getElementById('et-bp').value || '__/__';
+  const efastTime = document.getElementById('et-efast-time').value || '—';
+  document.getElementById('et-crt').value = 'CRT \u003c2 s';
+  document.getElementById('et-jvp').value = 'JVP not raised';
+  document.getElementById('et-c-abd').value = 'Soft, not tender';
+  document.getElementById('et-longbones').value = 'No deformity';
+  document.getElementById('et-efast').value = 'eFAST negative';
+  document.getElementById('et-c-notes').value =
+    `P ${hr} bpm, BP ${bp} mmHg, CRT < 2 s, abdomen soft & not tender, no long bones deformity, eFAST -ve at ${efastTime}`;
+}
+
+function autoPS_D() {
+  document.getElementById('et-gcs').value = 'E4V5M6';
+  document.getElementById('et-pupils').value = '3 mmRTLBE';
+  document.getElementById('et-neuro-notes').value =
+    'E4V5M6, pupil 3 mmRTLBE, no lateralizing signs';
+}
+
+function autoPS_E() {
+  etWounds.length = 0;
+  renderWounds();
+  document.getElementById('et-logroll').value = 'Spine not tender, no step deformity';
+  document.getElementById('et-pr-check').value = 'PR not performed — not indicated';
+}
+
+
+
+function switchERType(val) {
+  const isTrauma = val === 'trauma';
+  document.getElementById('er-trauma-page').style.display = isTrauma ? 'block' : 'none';
+
+  updateOncallBtnVisibility();
+}
+// Show trauma by default on page load
+document.addEventListener('DOMContentLoaded', () => {
+  const traumaPage = document.getElementById('er-trauma-page');
+  if (traumaPage) traumaPage.style.display = 'block';
+}, false);
+function toggleMoreTabs() {
+  const group = document.getElementById('tab-more-group');
+  const btn = document.getElementById('tab-more-toggle');
+  const isOpen = group.style.display !== 'none';
+  group.style.display = isOpen ? 'none' : 'contents';
+  btn.classList.toggle('open', !isOpen);
+  btn.textContent = isOpen ? '⋯ More' : '✕ Less';
+}
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+  updateOncallBtnVisibility();
+  // Psych tab: calm solid background; other tabs: animated gradient
+  if (name === 'psych') {
+    document.body.style.animation = 'none';
+    document.body.style.background = '#e8ede8';
+  } else {
+    document.body.style.background = '';
+    document.body.style.animation = '';
+  }
+}
+
+function switchOPDMode(val) {
+  document.getElementById('opd-fu-page').style.display  = val === 'fu'  ? 'block' : 'none';
+  document.getElementById('opd-new-page').style.display = val === 'new' ? 'block' : 'none';
+  document.getElementById('opd-ped-page').style.display = val === 'ped' ? 'block' : 'none';
+}
+
+function applyAutoPE_Ped(radio) {
+  const val = radio.value;
+  if (val === 'auto') {
+    document.getElementById('p-pe-gen').value   = 'alert, cooperative, no pale conjunctivae, no jaundice';
+    document.getElementById('p-pe-heent').value = 'no dry lips, no sunken eyeball, no allergic shiner, tonsils not injected nor enlarged, no cervical lymphadenopathy';
+    document.getElementById('p-pe-resp').value  = 'clear, equal BS';
+    document.getElementById('p-pe-cvs').value   = 'pulse full, regular, CRT <2 s';
+    document.getElementById('p-pe-abd').value   = 'soft, not tender';
+    document.getElementById('p-pe-neuro').value = 'E4V5M6, oriented to time place and person, pupil 3 mmRTLBE, motor V/V all, sensation intact';
+    document.getElementById('p-pe-ext').value   = 'no rash, no ecchymosis, no petechiae, no pitting edema, normal skin turgor';
+  } else {
+    ['p-pe-gen','p-pe-heent','p-pe-resp','p-pe-cvs','p-pe-abd','p-pe-neuro','p-pe-ext'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+  }
+}
+
+function toggleSmokeP() {
+  const val = document.querySelector('input[name="p-smoke"]:checked')?.value;
+  const det = document.getElementById('p-smoke-detail');
+  if (det) det.style.display = (val === 'current' || val === 'ex') ? 'block' : 'none';
+}
+
+function toggleDrinkP() {
+  const val = document.querySelector('input[name="p-drink"]:checked')?.value;
+  const det = document.getElementById('p-drink-detail');
+  if (det) det.style.display = (val === 'social' || val === 'regular' || val === 'ex') ? 'block' : 'none';
+}
+
+function togglePRPV(prefix) {
+  const prCheck = document.getElementById(prefix + '-pr-check');
+  const pvCheck = document.getElementById(prefix + '-pv-check');
+  const prField = document.getElementById(prefix + '-pr-field');
+  const pvField = document.getElementById(prefix + '-pv-field');
+  if (prField) prField.style.display = prCheck?.checked ? 'block' : 'none';
+  if (pvField) pvField.style.display = pvCheck?.checked ? 'block' : 'none';
+}
+
+// Show/hide PV wrapper based on sex and show n-obgyn-block
+function toggleFemaleFields(prefix) {
+  const sex = document.getElementById(prefix + '-sex')?.value;
+  const obgyn = document.getElementById(prefix + '-obgyn-block');
+  const pvWrapper = document.getElementById(prefix + '-pv-wrapper');
+  if (obgyn) obgyn.style.display = sex === 'Female' ? 'block' : 'none';
+  if (pvWrapper) pvWrapper.style.display = sex === 'Female' ? 'flex' : 'none';
+}
+
+function toggleSmokeN() {
+  const val = document.querySelector('input[name="n-smoke"]:checked')?.value;
+  const det = document.getElementById('n-smoke-detail');
+  if (det) det.style.display = (val === 'current' || val === 'ex') ? 'block' : 'none';
+}
+
+function toggleDrinkN() {
+  const val = document.querySelector('input[name="n-drink"]:checked')?.value;
+  const det = document.getElementById('n-drink-detail');
+  if (det) det.style.display = (val === 'social' || val === 'regular' || val === 'ex') ? 'block' : 'none';
+}
+
+function applyAutoPE_N(radio) {
+  const fields = ['n-pe-gen','n-pe-resp','n-pe-cvs','n-pe-abd','n-pe-neuro','n-pe-ext'];
+  if (radio._on) {
+    radio._on = false; radio.checked = false;
+    fields.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  } else {
+    radio._on = true;
+    document.getElementById('n-pe-gen').value   = AUTO_PE.gen;
+    document.getElementById('n-pe-resp').value  = AUTO_PE.resp;
+    document.getElementById('n-pe-cvs').value   = AUTO_PE.cvs;
+    document.getElementById('n-pe-abd').value   = AUTO_PE.abd;
+    document.getElementById('n-pe-neuro').value = AUTO_PE.neuro;
+    document.getElementById('n-pe-ext').value   = AUTO_PE.ext;
+  }
+}
+
+// ============================================================
+// BMI
+// ============================================================
+function calcBMI(p) {
+  const wt = parseFloat(document.getElementById(p+'-wt').value);
+  const ht = parseFloat(document.getElementById(p+'-ht').value);
+  const el = document.getElementById(p+'-bmi');
+  if (wt > 0 && ht > 0) {
+    const h = ht / 100;
+    const bmi = wt / (h * h);
+    let cat = '', cls = '';
+    if (bmi < 18.5)      { cat = 'น้ำหนักน้อย'; cls = 'bmi-under'; }
+    else if (bmi < 23)   { cat = 'ปกติ';        cls = 'bmi-normal'; }
+    else if (bmi < 27.5) { cat = 'น้ำหนักเกิน'; cls = 'bmi-over'; }
+    else                 { cat = 'อ้วน';         cls = 'bmi-obese'; }
+    el.textContent = bmi.toFixed(1) + ' – ' + cat;
+    el.className = 'bmi-display ' + cls;
+  } else {
+    el.textContent = '—'; el.className = 'bmi-display';
+  }
+}
+
+// ============================================================
+// NCD TOGGLES
+// ============================================================
+function toggleNCD(prefix, ncd) {
+  const tog = document.getElementById('toggle-' + prefix + '-' + ncd);
+  const det = document.getElementById('detail-' + prefix + '-' + ncd);
+  const checked = tog.querySelector('input').checked;
+  tog.classList.toggle('checked', checked);
+  det.classList.toggle('open', checked);
+}
+
+function toggleCKDStage(prefix) {
+  const stage = document.getElementById(prefix+'-ckd-stage').value;
+  const rrtSection = document.getElementById(prefix+'-ckd-rrt-section');
+  if (rrtSection) rrtSection.style.display = stage === '5' ? 'block' : 'none';
+}
+
+
+
+// ============================================================
+// LABS TODAY
+// ============================================================
+function toggleLabsToday(p) {
+  const val = document.querySelector(`input[name="${p}-labs-today"]:checked`).value;
+  document.getElementById(p + '-labs-section').style.display = val === 'yes' ? 'block' : 'none';
+}
+
+// ============================================================
+// ADD LAB ROW
+// ============================================================
+function addLabRow(tbodyId) {
+  const tbody = document.getElementById(tbodyId);
+  const row = document.createElement('tr');
+  row.innerHTML = `
+    <td><input type="text" placeholder="รายการตรวจ"></td>
+    <td><input type="text" placeholder="ผล"></td>
+    <td><input type="text" placeholder="หน่วย"></td>
+    <td><input type="text" placeholder="ค่าอ้างอิง"></td>
+    <td><select style="width:100%;border:1px solid #ddd;border-radius:4px;padding:4px;font-family:inherit">
+      <option value="ปกติ">ปกติ</option><option value="H – สูง">H – สูง</option><option value="L – ต่ำ">L – ต่ำ</option><option value="C – วิกฤต">C – วิกฤต</option>
+    </select></td>`;
+  tbody.appendChild(row);
+}
+
+// ============================================================
+// SELECTION HELPERS
+// ============================================================
+function selectFitness(el, val) {
+  el.closest('.card-body').querySelectorAll('.urgency-pill').forEach(p => p.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('a-fitness').value = val;
+}
+function selectDisposition(el, val) {
+  const container = el.closest('.urgency-row') || el.parentElement;
+  container.querySelectorAll('.urgency-pill').forEach(p => p.classList.remove('selected'));
+  el.classList.add('selected');
+  const hidden = document.getElementById('et-disposition');
+  if (hidden) hidden.value = val;
+  // Auto-stamp click time in GMT+7 (Asia/Bangkok)
+  const now = new Date();
+  const bkk = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
+  const hh = String(bkk.getHours()).padStart(2,'0');
+  const mm = String(bkk.getMinutes()).padStart(2,'0');
+  const stamp = `${hh}:${mm}`;
+  const stampEl = document.getElementById('et-disp-time');
+  if (stampEl) stampEl.value = stamp;
+  const displayEl = document.getElementById('et-disp-timestamp-row');
+  if (displayEl) {
+    if (val === 'discharge') displayEl.textContent = `⏱ D/C at ${stamp}`;
+    else if (val === 'admit') displayEl.textContent = `⏱ Admit at ${stamp}`;
+    else displayEl.textContent = '';
+  }
+}
+function selectUrgency(el, val) {
+  el.closest('.card-body').querySelectorAll('.urgency-pill').forEach(p => p.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('r-urgency').value = val;
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function v(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+function radioVal(name) { const el = document.querySelector(`input[name="${name}"]:checked`); return el ? el.value : ''; }
+function fmtDate(s) {
+  if (!s) return '—';
+  try { return new Date(s).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' }); }
+  catch { return s; }
+}
+
+function getLabsFromTable(tbodyId) {
+  const rows = document.querySelectorAll('#' + tbodyId + ' tr');
+  const lines = [];
+  rows.forEach(row => {
+    const inputs = row.querySelectorAll('input, select');
+    const test = inputs[0]?.value.trim();
+    const result = inputs[1]?.value.trim();
+    const unit = inputs[2]?.value.trim();
+    const ref = inputs[3]?.value.trim();
+    const flag = inputs[4]?.value.trim();
+    if (test || result) {
+      let line = `  ${test || '?'}: ${result || '?'}`;
+      if (unit) line += ` ${unit}`;
+      if (ref) line += ` (ค่าอ้างอิง: ${ref})`;
+      if (flag && flag !== 'ปกติ') line += ` [${flag}]`;
+      lines.push(line);
+    }
+  });
+  return lines;
+}
+
+// ============================================================
+// NCD SECTION BUILDER
+// ============================================================
+
+function buildNCDSection(prefix) {
+  const ncdOrder = ['dm','hpn','dlp','ckd','hf','thyroid','asthma','gout','cva','af'];
+  const active = ncdOrder.filter(n => {
+    const el = document.getElementById('toggle-' + prefix + '-' + n);
+    return el && el.querySelector('input').checked;
+  });
+  if (!active.length) return '';
+  const bullets = [];
+
+  // DM
+  if (active.includes('dm')) {
+    const a1c = v(prefix+'-dm-a1c');
+    const a1cdate = v(prefix+'-dm-a1cdate');
+    const comps = [];
+    if (document.getElementById(prefix+'-dm-retino')?.checked) comps.push('DR');
+    if (document.getElementById(prefix+'-dm-nephro')?.checked) comps.push('DN');
+    if (document.getElementById(prefix+'-dm-neuro')?.checked) comps.push('Neuropathy');
+    if (document.getElementById(prefix+'-dm-foot')?.checked) comps.push('Diabetic foot');
+    let s = 'T2DM';
+    if (a1c) s += ` last A1c ${a1c}%`;
+    if (a1cdate) s += ` ${a1cdate}`;
+    if (comps.length) s += ` + ${comps.join(', ')}`;
+    const meds = v(prefix+'-dm-meds');
+    if (meds) s += `, current med: ${meds}`;
+    bullets.push(s);
+  }
+
+  // HT
+  if (active.includes('hpn')) {
+    const sbp = v(prefix+'-hpn-sbp');
+    const meds = v(prefix+'-hpn-meds');
+    const comps = [];
+    if (document.getElementById(prefix+'-hpn-lvh')?.checked) comps.push('LVH');
+    if (document.getElementById(prefix+'-hpn-ckd')?.checked) comps.push('CKD');
+    if (document.getElementById(prefix+'-hpn-cva')?.checked) comps.push('CVA/TIA');
+    if (document.getElementById(prefix+'-hpn-retino')?.checked) comps.push('Hypertensive retinopathy');
+    let s = 'HT';
+    if (sbp) s += ` baseline SBP ${sbp} mmHg`;
+    if (comps.length) s += `, ${comps.join(', ')}`;
+    if (meds) s += `, current med: ${meds}`;
+    bullets.push(s);
+  }
+
+  // DLP
+  if (active.includes('dlp')) {
+    const ldl = v(prefix+'-dlp-ldl');
+    const labdate = v(prefix+'-dlp-labdate');
+    const meds = v(prefix+'-dlp-meds');
+    const goal = v(prefix+'-dlp-goal');
+    let s = 'DLP';
+    if (ldl) s += ` last LDL ${ldl} mg/dL`;
+    if (labdate) s += ` ${labdate}`;
+    if (goal) s += `, goal ${goal}`;
+    if (meds) s += `, current med: ${meds}`;
+    bullets.push(s);
+  }
+
+  // CKD
+  if (active.includes('ckd')) {
+    const stage = v(prefix+'-ckd-stage');
+    const egfr = v(prefix+'-ckd-egfr');
+    const meds = v(prefix+'-ckd-meds');
+    const rrtEl = document.querySelector(`input[name="${prefix}-ckd-rrt"]:checked`);
+    const rrt = rrtEl ? rrtEl.value : null;
+    let s = 'CKD';
+    if (stage) s += ` stage ${stage}`;
+    if (egfr) s += ` (eGFR ${egfr})`;
+    if (stage === '5' && rrt) s += `, RRT: ${rrt}`;
+    if (meds) s += `, current med: ${meds}`;
+    bullets.push(s);
+  }
+
+  // HF
+  if (active.includes('hf')) {
+    const hfTypeFull = v(prefix+'-hf-type');
+    const hfType = hfTypeFull.replace(/ \(EF.*\)/, '').trim();  // strip subgroup-defining EF
+    const ef = v(prefix+'-hf-ef');
+    const echodate = v(prefix+'-hf-echodate');
+    const nyha = v(prefix+'-hf-nyha');
+    const meds = v(prefix+'-hf-meds');
+    let s = 'HF';
+    if (hfType) s += ` ${hfType}`;
+    if (ef) s += ` EF ${ef}%`;
+    if (echodate) s += ` (last echo ${echodate})`;
+    if (nyha) s += `, ${nyha}`;
+    if (meds) s += `, current med: ${meds}`;
+    bullets.push(s);
+  }
+
+  // Thyroid
+  if (active.includes('thyroid')) {
+    const thyType = radioVal(prefix+'-thy-type') || 'Dysthyroidism';
+    const tsh = v(prefix+'-thy-tsh');
+    const ft4 = v(prefix+'-thy-ft4');
+    const labdate = v(prefix+'-thy-labdate');
+    const status = v(prefix+'-thy-status');
+    const meds = v(prefix+'-thy-meds');
+    let s = thyType;
+    if (tsh) s += ` TSH ${tsh}`;
+    if (ft4) s += ` FT4 ${ft4}`;
+    if (labdate) s += ` ${labdate}`;
+    if (status) s += `, ${status}`;
+    if (meds) s += `, current med: ${meds}`;
+    bullets.push(s);
+  }
+
+
+  // Gout
+  if (active.includes('gout')) {
+    const ua = v(prefix+'-gout-ua');
+    const uadate = v(prefix+'-gout-uadate');
+    const meds = v(prefix+'-gout-meds');
+    const hla = v(prefix+'-gout-hla');
+    let s = 'Gouty arthritis';
+    if (ua) s += ` last uric acid ${ua} mg/dL`;
+    if (uadate) s += ` ${uadate}`;
+    if (hla) s += `, ${hla}`;
+    if (meds) s += `, current med: ${meds}`;
+    bullets.push(s);
+  }
+
+  // Asthma/COPD
+  if (active.includes('asthma')) {
+    const lt = radioVal(prefix+'-lung-type') || 'Asthma/COPD';
+    const ctrl = v(prefix+'-lung-control');
+    const meds = v(prefix+'-lung-meds');
+    let s = lt;
+    if (ctrl) s += ` (${ctrl})`;
+    if (meds) s += `, current med: ${meds}`;
+    bullets.push(s);
+  }
+
+  const extra = v(prefix+'-pmhx-extra');
+  if (extra) extra.split('\n').forEach(l => { if (l.trim()) bullets.push(l.trim()); });
+
+  // CVA
+  if (active.includes('cva')) {
+    const yr = v(prefix+'-cva-year');
+    const type = v(prefix+'-cva-type');
+    const baseline = v(prefix+'-cva-baseline');
+    const meds = v(prefix+'-cva-meds');
+    let s = 'Old CVA';
+    if (type) s += ` (${type})`;
+    if (yr) s += ` ${yr}`;
+    if (baseline) s += `, baseline: ${baseline}`;
+    if (meds) s += `, current med: ${meds}`;
+    bullets.push(s);
+  }
+
+  // AF
+  if (active.includes('af')) {
+    const anticoag = v(prefix+'-af-anticoag');
+    const inr = v(prefix+'-af-inr');
+    const inrdate = v(prefix+'-af-inrdate');
+    const echodate = v(prefix+'-af-echodate');
+    const wdose = v(prefix+'-af-warfarin-dose');
+    let s = 'AF';
+    if (echodate) s += ` (last echo ${echodate})`;
+    if (anticoag) {
+      s += `, ${anticoag}`;
+      if (anticoag === 'Warfarin' && wdose) s += ` ${wdose}`;
+    }
+    if (inr) s += `, last INR ${inr}${inrdate ? ' '+inrdate : ''}`;
+    bullets.push(s);
+  }
+
+  if (!bullets.length) return '';
+  // Strip inline 'current med:' suffix since meds are grouped separately
+  const cleanBullets = bullets.map(b => b.replace(/, current med:.*$/, ''));
+  const section = '\nUnderlying diseases :\n' + cleanBullets.map(b => `# ${b}`).join('\n');
+  return section;
+}
+
+
+// ============================================================
+// NOTE GENERATORS
+// ============================================================
+function generateNote(type) {
+  let note = '';
+  const thDate = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  if (type === 'opd') {
+    const age = v('o-age');
+    const sexRaw = v('o-sex');
+    const sexExport = sexRaw === 'Male' ? 'ช' : (sexRaw === 'Female' ? 'ญ' : '—');
+    const allergy = v('o-allergy') || 'NKDA';
+
+    // Line 1: identification — always with pipe
+    note += `${sexExport} ${age ? age + ' ปี' : '— ปี'} | ${allergy}`;
+
+    // Smoking / drinking
+    const smokeVal = document.querySelector('input[name="o-smoke"]:checked')?.value || 'never';
+    const drinkVal = document.querySelector('input[name="o-drink"]:checked')?.value || 'never';
+    const smokePack = v('o-smoke-pack'), smokeYear = v('o-smoke-year');
+    const drinkDetail = v('o-drink-detail-text');
+
+    let smokeStr = '';
+    if (smokeVal === 'never') smokeStr = 'Denied smoking';
+    else if (smokeVal === 'ex') {
+      smokeStr = 'Ex-smoker';
+      if (smokePack || smokeYear) smokeStr += ` (${smokePack||'?'} pack × ${smokeYear||'?'} yr)`;
+    } else if (smokeVal === 'ecig') {
+      smokeStr = 'E-cigarette user';
+    } else if (smokeVal === 'passive') {
+      smokeStr = 'Passive smoker';
+    } else {
+      smokeStr = 'Smoker';
+      if (smokePack || smokeYear) smokeStr += ` ${smokePack||'?'} pack × ${smokeYear||'?'} yr`;
+    }
+
+    let drinkStr = '';
+    if (drinkVal === 'never') drinkStr = 'Denied alcohol';
+    else if (drinkVal === 'social') drinkStr = 'Social drinker' + (drinkDetail ? ` (${drinkDetail})` : '');
+    else if (drinkVal === 'regular') drinkStr = 'Regular drinker' + (drinkDetail ? ` (${drinkDetail})` : '');
+    else drinkStr = 'Ex-drinker' + (drinkDetail ? ` (${drinkDetail})` : '');
+
+    note += `
+${smokeStr} | ${drinkStr}`;
+
+    // Underlying diseases block
+    note += buildNCDSection('o');
+
+    // Family history
+    const ofamhx = v('o-famhx');
+    if (ofamhx) note += `\nFamily Hx : ${ofamhx}`;
+
+    // OB/GYN (female only)
+    if (v('o-sex') === 'Female') {
+      const menst = v('o-menstrual-status'), lmp = v('o-lmp'), contra = v('o-contraception');
+      if (menst || lmp || contra) {
+        let obLine = [menst, lmp ? `LMP ${lmp}` : '', contra ? `Contraception: ${contra}` : ''].filter(Boolean).join(' | ');
+        note += `\nMenstrual : ${obLine}`;
+      }
+    }
+
+    // Collect all medications from active NCDs
+    const allMeds = [];
+    const ncdMedFields = ['o-dm-meds','o-hpn-meds','o-dlp-meds','o-ckd-meds','o-hf-meds','o-thy-meds','o-lung-meds','o-gout-meds','o-cva-meds'];
+    ncdMedFields.forEach(id => { const m = v(id); if (m) m.split(/[,;]+/).forEach(x => { const t = x.trim(); if (t) allMeds.push(t); }); });
+    // Also check AF anticoag
+    const afAnticoag = v('o-af-anticoag');
+    if (afAnticoag && afAnticoag !== 'None') {
+      const wdose = v('o-af-warfarin-dose');
+      allMeds.push(afAnticoag + (afAnticoag === 'Warfarin' && wdose ? ' ' + wdose : ''));
+    }
+
+    if (allMeds.length) {
+      note += `\nCurrent Med :\n` + allMeds.map(m => `- ${m}`).join('\n');
+    }
+
+    // CC + HPI
+    const cc = v('o-cc');
+    note += `\n\nCC : ${cc || '—'}`;
+
+    const normalSx = document.getElementById('o-normal-sx')?.checked;
+    const hpi = v('o-hpi');
+    if (hpi) {
+      note += `\n${hpi}`;
+    } else if (normalSx) {
+      const extra = v('o-normal-sx-extra');
+      note += `\nอาการทั่วไปปกติดี กินยาสม่ำเสมอ ไม่มีแน่นหน้าอกใจสั่น นอนราบได้ ไม่มีหอบเหนื่อย ไม่มีชาอ่อนแรง ไม่มีหน้าเบี้ยวปากเบี้ยว ไม่มีขาบวม ปัสสาวะปกติ ไม่มีปวดข้อ${extra ? ' ' + extra : ''}`;
+    }
+
+    // V/S — omit blank fields, compact format
+    const vsStable = document.querySelector('input[name="o-vs-stable"]:checked')?.value;
+    const hr = v('o-hr'), bp = v('o-bp'), rr = v('o-rr'), temp = v('o-temp'), spo2 = v('o-spo2');
+    const wt = v('o-wt'), bmiText = document.getElementById('o-bmi').textContent.split(' – ')[0];
+
+    let vsLine = '\nV/S ';
+
+
+    const vsParts = [];
+    if (hr)   vsParts.push(`P ${hr}`);
+    if (bp)   vsParts.push(`BP ${bp}`);
+    if (rr)   vsParts.push(`RR ${rr}`);
+    if (temp) vsParts.push(`T ${temp}`);
+    if (spo2) vsParts.push(`SpO₂ ${spo2}%`);
+    if (wt)   vsParts.push(`BW ${wt} kg`);
+    if (bmiText && bmiText !== '—') vsParts.push(`BMI ${bmiText}`);
+
+    vsLine += vsParts.join(' ');
+    note += vsLine;
+
+    // PE — each system on own line, blank = ___
+    const peGen  = v('o-pe-gen')   || '___';
+    const peCvs  = v('o-pe-cvs')   || '___';
+    const peResp = v('o-pe-resp')  || '___';
+    const peAbd  = v('o-pe-abd')   || '___';
+    const peNs   = v('o-pe-neuro') || '___';
+    const peExt  = v('o-pe-ext')   || '___';
+    const peOther = v('o-pe-other');
+
+    note += `\nGA : ${peGen}`;
+    note += `\nRS : ${peResp}`;
+    note += `\nCVS : ${peCvs}`;
+    note += `\nAbd : ${peAbd}`;
+    note += `\nNS : ${peNs}`;
+    note += `\nExt : ${peExt}`;
+    if (peOther) note += `\n${peOther}`;
+    if (document.getElementById('o-pr-check')?.checked) {
+      const prVal = v('o-pe-pr'); if (prVal) note += `\nPR : ${prVal}`;
+    }
+    if (document.getElementById('o-pv-check')?.checked) {
+      const pvVal = v('o-pe-pv'); if (pvVal) note += `\nPV :\n${pvVal}`;
+    }
+
+
+    // Labs
+    const labsToday = document.querySelector('input[name="o-labs-today"]:checked')?.value;
+    if (labsToday === 'yes') {
+      const labLines = getLabsFromTable('o-labs-tbody');
+      if (labLines.length) note += `\n\nLabs :\n` + labLines.join('\n');
+    }
+
+    // Imp / Dx — auto from NCDs + extra
+    const dxParts = getAutoDx();
+    note += `\n\nImp : ${dxParts.length ? dxParts.join(', ') : '—'}`;
+
+    // Mx — checkboxes + free text
+    const mxItems = [];
+    if (document.getElementById('o-mx-lsm')?.checked)   mxItems.push('Advise LSM');
+    if (document.getElementById('o-mx-remed')?.checked) mxItems.push('Remedication');
+    if (document.getElementById('o-mx-change')?.checked) mxItems.push('Change medication');
+    if (document.getElementById('o-mx-refer')?.checked) mxItems.push('Refer');
+    const mxFree = v('o-mgmt-today');
+    note += `\nMx :`;
+    mxItems.forEach(m => note += `\n- ${m}`);
+    if (mxFree) note += `\n${mxFree.split('\n').map(l => '- ' + l).join('\n')}`;
+    if (!mxItems.length && !mxFree) note += ' —';
+
+    // Plan
+    const plan = v('o-plan');
+    note += `\nPlan : ${plan || 'F/U'}`;
+
+  }
+
+  else if (type === 'new') {
+    const sexRaw = v('n-sex');
+    const sexExport = sexRaw === 'Male' ? 'ช' : (sexRaw === 'Female' ? 'ญ' : '—');
+    const age = v('n-age');
+    const allergy = v('n-allergy') || 'NKDA';
+
+    note += `${sexExport} ${age ? age + ' ปี' : '— ปี'} | ${allergy}`;
+
+    // Smoking / drinking
+    const smokeValN = document.querySelector('input[name="n-smoke"]:checked')?.value || 'never';
+    const drinkValN = document.querySelector('input[name="n-drink"]:checked')?.value || 'never';
+    const smokePackN = v('n-smoke-pack'), smokeYearN = v('n-smoke-year');
+    const drinkDetailN = v('n-drink-detail-text');
+    let smokeStrN = smokeValN === 'never' ? 'Non-smoker' : (smokeValN === 'ex' ? `Ex-smoker${(smokePackN||smokeYearN) ? ' ('+  (smokePackN||'?')+' pack × '+(smokeYearN||'?')+' yr)' : ''}` : `Smoker${(smokePackN||smokeYearN) ? ' '+(smokePackN||'?')+' pack × '+(smokeYearN||'?')+' yr' : ''}`);
+    let drinkStrN = drinkValN === 'never' ? 'No alcohol' : (drinkValN === 'social' ? 'Social drinker' : drinkValN === 'regular' ? 'Regular drinker' : 'Ex-drinker') + (drinkDetailN ? ` (${drinkDetailN})` : '');
+    note += `\n${smokeStrN} | ${drinkStrN}`;
+
+    // PMHx / meds
+    const pmhx = v('n-pmhx'), meds = v('n-meds');
+    if (pmhx) note += `\nPMHx : ${pmhx}`;
+    if (meds)  note += `\nMeds : ${meds}`;
+
+    // CC
+    note += `\n\nCC : ${v('n-cc') || '—'}`;
+    const dur = v('n-duration'); if (dur) note += ` (${dur})`;
+    const hpiN = v('n-hpi'); if (hpiN) note += `\n${hpiN}`;
+
+    // V/S
+    const hrN=v('n-hr'), bpN=v('n-bp'), rrN=v('n-rr'), tempN=v('n-temp'), spo2N=v('n-spo2');
+    const wtN=v('n-wt'), bmiNText=document.getElementById('n-bmi').textContent.split(' – ')[0];
+    const vsPartsN=[];
+    if (hrN)   vsPartsN.push(`P ${hrN}`);
+    if (bpN)   vsPartsN.push(`BP ${bpN}`);
+    if (rrN)   vsPartsN.push(`RR ${rrN}`);
+    if (tempN) vsPartsN.push(`T ${tempN}`);
+    if (spo2N) vsPartsN.push(`SpO\u2082 ${spo2N}%`);
+    if (wtN)   vsPartsN.push(`BW ${wtN} kg`);
+    if (bmiNText && bmiNText !== '—') vsPartsN.push(`BMI ${bmiNText}`);
+    note += `\nV/S ${vsPartsN.join(' ')}`;
+
+    // PE
+    note += `\nGA : ${v('n-pe-gen')   || '___'}`;
+    note += `\nRS : ${v('n-pe-resp')  || '___'}`;
+    note += `\nCVS : ${v('n-pe-cvs')  || '___'}`;
+    note += `\nAbd : ${v('n-pe-abd')  || '___'}`;
+    note += `\nNS : ${v('n-pe-neuro') || '___'}`;
+    note += `\nExt : ${v('n-pe-ext')  || '___'}`;
+    const peOtherN = v('n-pe-other'); if (peOtherN) note += `\n${peOtherN}`;
+    if (document.getElementById('n-pr-check')?.checked) {
+      const prVal = v('n-pe-pr'); if (prVal) note += `\nPR : ${prVal}`;
+    }
+    if (document.getElementById('n-pv-check')?.checked) {
+      const pvVal = v('n-pe-pv'); if (pvVal) note += `\nPV :\n${pvVal}`;
+    }
+
+    // Labs
+    const labsTodayN = document.querySelector('input[name="n-labs-today"]:checked')?.value;
+    if (labsTodayN === 'yes') {
+      const labLinesN = getLabsFromTable('n-labs-tbody');
+      if (labLinesN.length) note += `\n\nLabs :\n` + labLinesN.join('\n');
+    }
+
+    // Dx + Mx + Plan
+    note += `\n\nImp : ${v('n-assess') || '—'}`;
+    const mgmtN = v('n-mgmt');
+    note += `\nMx :${mgmtN ? '\n' + mgmtN.split('\n').map(l => '- ' + l).join('\n') : ' —'}`;
+    note += `\nPlan : ${v('n-plan') || '—'}`;
+
+  }
+
+
+  else if (type === 'ped') {
+    const sexRaw = v('p-sex');
+    const sexExport = sexRaw === 'Male' ? 'ช' : (sexRaw === 'Female' ? 'ญ' : '—');
+    const age = v('p-age');
+    const allergy = v('p-allergy') || 'NKDA';
+
+    note += sexExport + ' ' + (age ? age + ' ปี' : '— ปี') + ' | ' + allergy;
+
+    // Smoke/drink
+    const smokeValP = document.querySelector('input[name="p-smoke"]:checked')?.value || 'never';
+    const drinkValP = document.querySelector('input[name="p-drink"]:checked')?.value || 'never';
+    const smokePackP = v('p-smoke-pack'), smokeYearP = v('p-smoke-year');
+    const drinkDetailP = v('p-drink-detail-text');
+    const smokeStrP = smokeValP === 'never' ? 'No passive smoke' : ('Passive smoke' + ((smokePackP||smokeYearP) ? ' ' + (smokePackP||'?') + ' pack × ' + (smokeYearP||'?') + ' yr' : ''));
+    const drinkStrP = drinkValP === 'never' ? '' : ((drinkValP === 'social' ? 'Social drinker (parent)' : 'Regular drinker (parent)') + (drinkDetailP ? ' (' + drinkDetailP + ')' : ''));
+    note += '\n' + smokeStrP + (drinkStrP ? ' | ' + drinkStrP : '');
+
+    // PMHx
+    const pmhxP = v('p-pmhx'), medsP = v('p-meds');
+    if (pmhxP) note += '\nPMHx : ' + pmhxP;
+    if (medsP)  note += '\nMeds : ' + medsP;
+
+    // Perinatal
+    const delivRoute = document.querySelector('input[name="p-deliv"]:checked')?.value;
+    const bwP = v('p-bw'), apgarP = v('p-apgar');
+    const pComps = [];
+    if (document.getElementById('p-peri-jx')?.checked)  pComps.push('Neonatal jaundice → Phototherapy');
+    if (document.getElementById('p-peri-rds')?.checked) pComps.push('RDS → Surfactant');
+    if (document.getElementById('p-peri-sep')?.checked) pComps.push('Neonatal sepsis → ATB');
+    if (document.getElementById('p-peri-other')?.checked) {
+      const o = v('p-peri-other-text'); if (o) pComps.push(o);
+    }
+    const periParts = [];
+    if (delivRoute) periParts.push(delivRoute);
+    if (bwP) periParts.push('BW ' + bwP + ' g');
+    if (apgarP) periParts.push('Apgar ' + apgarP);
+    if (pComps.length) periParts.push(pComps.join(', '));
+    if (periParts.length) note += '\nPerinatal : ' + periParts.join(', ');
+
+    const siblingsP = v('p-siblings');
+    if (siblingsP) note += '\nSiblings : ' + siblingsP;
+
+    const vaccP = v('p-vacc'), devP = v('p-dev');
+    if (vaccP) note += '\nVaccination : ' + vaccP;
+    if (devP)  note += '\nDevelopment : ' + devP;
+    const pfamhx = v('p-famhx');
+    if (pfamhx) note += '\nFamily Hx : ' + pfamhx;
+
+    // CC
+    note += '\n\nCC : ' + (v('p-cc') || '—');
+    const durP = v('p-duration'); if (durP) note += ' (' + durP + ')';
+
+    const lastVoid = v('p-last-void');
+    const lastAnti = v('p-last-antipyretic');
+    if (lastVoid) note += '\nLast void : ' + lastVoid;
+    if (lastAnti) note += '\nLast antipyretic : ' + lastAnti;
+
+    const hpiP = v('p-hpi'); if (hpiP) note += '\n' + hpiP;
+
+    // V/S
+    const hrP=v('p-hr'), bpP=v('p-bp'), rrP=v('p-rr'), tempP=v('p-temp'), spo2P=v('p-spo2');
+    const wtP=v('p-wt');
+    const bmiPEl = document.getElementById('p-bmi');
+    const bmiPText = bmiPEl ? bmiPEl.textContent.split(' – ')[0] : '—';
+    const vsPartsP = [];
+    if (hrP)   vsPartsP.push('P ' + hrP);
+    if (bpP)   vsPartsP.push('BP ' + bpP);
+    if (rrP)   vsPartsP.push('RR ' + rrP);
+    if (tempP) vsPartsP.push('T ' + tempP);
+    if (spo2P) vsPartsP.push('SpO₂ ' + spo2P + '%');
+    if (wtP)   vsPartsP.push('BW ' + wtP + ' kg');
+    if (bmiPText && bmiPText !== '—') vsPartsP.push('BMI ' + bmiPText);
+    note += '\nV/S ' + vsPartsP.join(' ');
+
+    // PE
+    note += '\nGA : '    + (v('p-pe-gen')   || '___');
+    note += '\nHEENT : ' + (v('p-pe-heent') || '___');
+    note += '\nRS : '    + (v('p-pe-resp')  || '___');
+    note += '\nCVS : '   + (v('p-pe-cvs')   || '___');
+    note += '\nAbd : '   + (v('p-pe-abd')   || '___');
+    note += '\nNS : '    + (v('p-pe-neuro') || '___');
+    note += '\nExt : '   + (v('p-pe-ext')   || '___');
+    const peOtherP = v('p-pe-other'); if (peOtherP) note += '\n' + peOtherP;
+    if (document.getElementById('p-pr-check')?.checked) {
+      const prValP = v('p-pe-pr'); if (prValP) note += '\nPR : ' + prValP;
+    }
+
+    // Labs
+    const labsTodayP = document.querySelector('input[name="p-labs-today"]:checked')?.value;
+    if (labsTodayP === 'yes') {
+      const labLinesP = getLabsFromTable('p-labs-tbody');
+      if (labLinesP.length) note += '\n\nLabs :\n' + labLinesP.join('\n');
+    }
+
+    // Dx Mx Plan
+    note += '\n\nImp : ' + (v('p-assess') || '—');
+    const mgmtP = v('p-mgmt');
+    note += '\nMx :' + (mgmtP ? '\n' + mgmtP.split('\n').map(l => '- ' + l).join('\n') : ' —');
+    note += '\nPlan : ' + (v('p-plan') || '—');
+  }
+  
+
+  else if (type === 'psych') {
+    const sexRaw = v('ps-sex');
+    const sexExport = sexRaw === 'Male' ? 'ช' : (sexRaw === 'Female' ? 'ญ' : '—');
+    const age = v('ps-age'), allergy = v('ps-allergy') || 'NKDA';
+    const mode = document.querySelector('input[name="psych-mode"]:checked')?.value || 'new';
+
+    note += `Psychiatry Note — ${mode === 'fu' ? 'Follow-up' : 'New Patient'}`;
+    note += `\n${sexExport} ${age ? age + ' ปี' : '— ปี'} | ${allergy}`;
+
+    // Smoke / drink
+    const smkVal = document.querySelector('input[name="ps-smoke"]:checked')?.value || 'never';
+    const drkVal = document.querySelector('input[name="ps-drink"]:checked')?.value || 'never';
+    const smkPk = v('ps-smoke-pack'), smkYr = v('ps-smoke-year'), drkDet = v('ps-drink-detail-text');
+    let smkStr = smkVal === 'never' ? 'Denied smoking' : smkVal === 'ex' ? `Ex-smoker${(smkPk||smkYr)?' ('+(smkPk||'?')+' pack × '+(smkYr||'?')+' yr)':''}` : `Smoker${(smkPk||smkYr)?' '+(smkPk||'?')+' pack × '+(smkYr||'?')+' yr':''}`;
+    let drkStr = drkVal === 'never' ? 'Denied alcohol' : ((drkVal === 'social' ? 'Social drinker' : drkVal === 'regular' ? 'Regular drinker' : 'Ex-drinker') + (drkDet ? ` (${drkDet})` : ''));
+    note += `\n${smkStr} | ${drkStr}`;
+
+    // PMHx
+    const pmhxMed = v('ps-pmhx-med'), pmhxSurg = v('ps-pmhx-surg'), famhx = v('ps-famhx');
+    if (pmhxMed) note += `\nU/D : ${pmhxMed}`;
+    if (pmhxSurg) note += `\nSurgical Hx : ${pmhxSurg}`;
+    if (famhx) note += `\nFamily Hx : ${famhx}`;
+
+    // Past psychiatric history
+    const pphxAny = document.getElementById('ps-pphx-any')?.checked;
+    if (!pphxAny) {
+      note += `\nPast psychiatric history : Denied`;
+    } else {
+      const pphxDx = v('ps-pphx-dx'), pphxAdmit = v('ps-pphx-admit');
+      const pphxEct = v('ps-pphx-ect'), pphxSa = v('ps-pphx-sa'), pphxNotes = v('ps-pphx-notes');
+      note += `\nPast psychiatric history :`;
+      if (pphxDx) note += `\n  Diagnosis: ${pphxDx}`;
+      if (pphxAdmit) note += `\n  Hospitalisations: ${pphxAdmit}`;
+      if (pphxEct && pphxEct !== 'None') note += `\n  ECT: ${pphxEct}`;
+      if (pphxSa && pphxSa !== 'None') note += `\n  Suicide attempt: ${pphxSa}`;
+      if (pphxNotes) note += `\n  ${pphxNotes}`;
+    }
+
+    // Current medications
+    const medsPsych = v('ps-meds-psych'), medsOther = v('ps-meds-other');
+    if (medsPsych || medsOther) {
+      note += `\n\nCurrent Med :`;
+      if (medsPsych) medsPsych.split('\n').forEach(m => { if (m.trim()) note += `\n- ${m.trim()}`; });
+      if (medsOther) medsOther.split(/[,;]+/).forEach(m => { if (m.trim()) note += `\n- ${m.trim()}`; });
+    }
+
+    // CC & HPI
+    const cc = v('ps-cc'), dur = v('ps-duration'), hpi = v('ps-hpi');
+    note += `\n\nCC : ${cc || '—'}${dur ? ' (' + dur + ')' : ''}`;
+    if (hpi) note += `\n${hpi}`;
+
+    // Personal history
+    const phSub = v('ps-ph-substance'), phHouse = v('ps-ph-housing');
+    const phSleep = v('ps-ph-sleep'), phOcc = v('ps-ph-occ'), phLegal = v('ps-ph-legal');
+    if (phSub || phHouse || phSleep || phOcc || phLegal) {
+      note += `\n\nPersonal History :`;
+      if (phSub)   note += `\n  Substances: ${phSub.replace(/\n/g,' | ')}`;
+      if (phHouse) note += `\n  Housing: ${phHouse.replace(/\n/g,' | ')}`;
+      if (phSleep) note += `\n  Sleep: ${phSleep}`;
+      if (phOcc)   note += `\n  Occupation: ${phOcc}`;
+      if (phLegal) note += `\n  Forensic: ${phLegal}`;
+    }
+
+    // Physical exam
+    const psVSParts = [];
+    if (v('ps-hr'))   psVSParts.push('P ' + v('ps-hr'));
+    if (v('ps-bp'))   psVSParts.push('BP ' + v('ps-bp'));
+    if (v('ps-rr'))   psVSParts.push('RR ' + v('ps-rr'));
+    if (v('ps-temp')) psVSParts.push('T ' + v('ps-temp'));
+    const psBmiEl = document.getElementById('ps-bmi');
+    const psBmi = psBmiEl ? psBmiEl.textContent.split(' – ')[0] : '—';
+    const peNormal = document.getElementById('ps-pe-normal')?.checked;
+    note += `\n\nV/S ${psVSParts.join(' ') || '—'} | BW ${v('ps-wt') || '—'} kg | Ht ${v('ps-ht') || '—'} cm | BMI ${psBmi}`;
+    if (peNormal) {
+      note += `\n  PE: All within normal limits`;
+    } else {
+      note += `\nGA : ${v('ps-pe-gen') || '___'}`;
+      note += `\nCVS : ${v('ps-pe-cvs') || '___'}`;
+      note += `\nRS : ${v('ps-pe-resp') || '___'}`;
+      note += `\nAbd : ${v('ps-pe-abd') || '___'}`;
+      note += `\nNS : ${v('ps-pe-neuro') || '___'}`;
+      note += `\nExt/Skin : ${v('ps-pe-ext') || '___'}`;
+    }
+
+    // MSE
+    note += `\n\nMSE :`;
+
+    // Appearance
+    const appear = v('ps-mse-appearance');
+    if (appear) note += `\n  Appearance & Behaviour: ${appear}`;
+
+    // Psychomotor
+    const pmParts = [];
+    if (document.getElementById('ps-pm-ret')?.checked) pmParts.push(`Retardation (${v('ps-pm-ret-sev')||'mild'})`);
+    if (document.getElementById('ps-pm-agi')?.checked) pmParts.push(`Agitation (${v('ps-pm-agi-sev')||'mild'})`);
+    if (document.getElementById('ps-pm-cat')?.checked) {
+      const catSubs = [];
+      if (document.getElementById('ps-pm-cat-ex')?.checked) catSubs.push('excitement');
+      if (document.getElementById('ps-pm-cat-st')?.checked) catSubs.push('stupor');
+      if (document.getElementById('ps-pm-cat-po')?.checked) catSubs.push('posturing');
+      pmParts.push('Catatonia' + (catSubs.length ? ` (${catSubs.join(', ')})` : ''));
+    }
+    if (pmParts.length) note += `\n  Psychomotor: ${pmParts.join(', ')}`;
+
+    // Mood
+    const moodMap = {dep:'Depressed',dys:'Dysphoric',eut:'Euthymic',ele:'Elevated',eup:'Euphoric',irr:'Irritable',exp:'Expansive',anx:'Anxiety'};
+    const moods = Object.entries(moodMap).filter(([k])=>document.getElementById('ps-mood-'+k)?.checked).map(([,lbl])=>lbl);
+    const moodQuote = v('ps-mood-quote');
+    let moodStr = moods.join(', ');
+    if (moodQuote) moodStr += (moodStr ? ' — ' : '') + '"' + moodQuote + '"';
+    if (moodStr) note += `\n  Mood: ${moodStr}`;
+
+    // Affect
+    const affMap = {res:'Restricted',blu:'Blunted',fla:'Flat',lab:'Labile'};
+    const affs = Object.entries(affMap).filter(([k])=>document.getElementById('ps-aff-'+k)?.checked).map(([,lbl])=>lbl);
+    const affCong = document.querySelector('input[name="ps-aff-cong"]:checked')?.value;
+    let affStr = affs.join(', ');
+    if (affCong) affStr += (affStr ? ', ' : '') + affCong;
+    if (affStr) note += `\n  Affect: ${affStr}`;
+
+    // Speech
+    const spMap = {pov:'Poverty of speech',blo:'Blocking',per:'Perseveration',loa:'Loosening of association',inc:'Incoherence',foi:'Flight of ideas',tan:'Tangentiality',cir:'Circumstantiality',ill:'Illogicality',cla:'Clanging',neo:'Neologisms',pre:'Pressure of speech'};
+    const spItems = Object.entries(spMap).filter(([k])=>document.getElementById('ps-sp-'+k)?.checked).map(([,lbl])=>lbl);
+    if (spItems.length) note += `\n  Speech: ${spItems.join(', ')}`;
+
+    // Perception — declare perDenied first so Thought block can use it
+    const perMap = {ah:'AH',vh:'VH',oh:'OH',th:'TH',ill:'Illusion'};
+    const perItems = Object.entries(perMap).filter(([k])=>document.getElementById('ps-per-'+k)?.checked)
+      .map(([k,lbl]) => { const txt = v('ps-per-'+k+'-txt'); return txt ? `${lbl} (${txt})` : lbl; });
+    const perDenied = document.getElementById('ps-per-denied')?.checked;
+
+    // Thought flow
+    const tfItems = [];
+    if (document.getElementById('ps-tf-rel')?.checked) tfItems.push('Relevant');
+    if (document.getElementById('ps-tf-coh')?.checked) tfItems.push('Coherent');
+    // Thought content
+    const tcMap = {pre:'Preoccupation',obs:'Obsession',pho:'Phobia',si:'Suicidal ideation',pdw:'Passive death wish',ov:'Overvalued idea'};
+    const tcItems = Object.entries(tcMap).filter(([k])=>document.getElementById('ps-tc-'+k)?.checked).map(([,lbl])=>lbl);
+    // Delusions
+    const delMap = {ref:'Reference',fra:'Fragmented',per:'Persecutory',jea:'Jealousy',ero:'Erotomania',gra:'Grandiose',biz:'Bizarre'};
+    const delItems = Object.entries(delMap).filter(([k])=>document.getElementById('ps-del-'+k)?.checked).map(([,lbl])=>lbl);
+    const delCong = document.querySelector('input[name="ps-del-cong"]:checked')?.value;
+    const delSys = document.getElementById('ps-del-sys')?.checked;
+    const delNotes = v('ps-del-notes');
+    const tfNotes = v('ps-tf-notes'), tcNotes = v('ps-tc-notes');
+    const tcDenied = perDenied ? 'denied suicidal ideations and passive death wish' : '';
+    if (tfItems.length || tcItems.length || delItems.length || tfNotes || tcNotes || tcDenied) {
+      note += `\n  Thought:`;
+      if (tfItems.length || tfNotes) note += `\n    Flow: ${[...tfItems, tfNotes].filter(Boolean).join(', ')}`;
+      if (tcItems.length || tcNotes || tcDenied) note += `\n    Content: ${[...tcItems, tcNotes, tcDenied].filter(Boolean).join(', ')}`;
+      if (delItems.length) {
+        let delStr = `Delusions — ${delItems.join(', ')}`;
+        if (delCong) delStr += ` (${delCong})`;
+        if (delSys) delStr += ', systematized';
+        if (delNotes) delStr += ` — ${delNotes}`;
+        note += `\n    ${delStr}`;
+      }
+    }
+
+    // Perception (use already-declared perDenied / perItems)
+    if (perDenied) {
+      note += `\n  Perception: denied hallucinations`;
+    } else if (perItems.length) {
+      note += `\n  Perception: ${perItems.join('; ')}`;
+    }
+
+    // Cognition
+    note += `\n  Cognition:`;
+    const orient2 = v('ps-mse-orient');
+    if (orient2) note += `\n    Orientation: ${orient2}`;
+    // Concentration tests
+    const concParts = [];
+    if (document.getElementById('ps-cog-100')?.checked) {
+      const sc = v('ps-cog-100-sc'), nt = v('ps-cog-100-note');
+      concParts.push(`100−7: ${sc||'?'}/5${nt?' ('+nt+')':''}`);
+    }
+    if (document.getElementById('ps-cog-20')?.checked) {
+      const sc = v('ps-cog-20-sc'), nt = v('ps-cog-20-note');
+      concParts.push(`20−3: ${sc||'?'}/5${nt?' ('+nt+')':''}`);
+    }
+    if (document.getElementById('ps-cog-days-fwd')?.checked) {
+      const sc = v('ps-cog-days-fwd-sc');
+      concParts.push(`Days forward: ${sc||'?'}/7`);
+    }
+    if (document.getElementById('ps-cog-days-bwd')?.checked) {
+      const sc = v('ps-cog-days-bwd-sc');
+      concParts.push(`Days backward: ${sc||'?'}/7`);
+    }
+    if (concParts.length) note += `\n    Concentration: ${concParts.join(', ')}`;
+    // Memory
+    const memR = v('ps-mem-recent'), memRm = v('ps-mem-remote');
+    const memReg = v('ps-mem-reg'), memRegN = v('ps-mem-reg-note');
+    if (memR || memRm || memReg) {
+      note += `\n    Memory:`;
+      if (memR) note += ` Recent — ${memR};`;
+      if (memRm) note += ` Remote — ${memRm};`;
+      if (memReg) note += ` Registration/Retention/Recall ${memReg}/3${memRegN?' ('+memRegN+')':''}`;
+    }
+    // General knowledge
+    const gk1 = v('ps-gk-1'), gk2 = v('ps-gk-2'), gk3 = v('ps-gk-3');
+    if (gk1 || gk2 || gk3) {
+      const score = [gk1,gk2,gk3].filter(x=>x==='1').length;
+      note += `\n    General knowledge: ${score}/3`;
+    }
+    // Abstract thinking
+    const absDiffs = [[v('ps-abs-d1'),'กลางวัน-กลางคืน'],[v('ps-abs-d2'),'ต้นมะเขือ-ต้นโพธิ์'],[v('ps-abs-d3'),'เด็ก-คนแคระ']].filter(([a])=>a);
+    const absSims  = [[v('ps-abs-s1'),'ส้ม-กล้วย'],[v('ps-abs-s2'),'หนู-แมว'],[v('ps-abs-s3'),'รถ-เรือ']].filter(([a])=>a);
+    const absProv  = [[v('ps-abs-p1'),'น้ำขึ้นให้รีบตัก'],[v('ps-abs-p2'),'หนีเสือปะจระเข้'],[v('ps-abs-p3'),'ขี่ช้างจับตั๊กแตน']].filter(([a])=>a);
+    if (absDiffs.length || absSims.length || absProv.length) {
+      note += `\n    Abstract thinking:`;
+      absDiffs.forEach(([ans,q]) => note += `\n      Diff (${q}): "${ans}"`);
+      absSims.forEach( ([ans,q]) => note += `\n      Sim (${q}): "${ans}"`);
+      absProv.forEach( ([ans,q]) => note += `\n      Proverb (${q}): "${ans}"`);
+    }
+
+    // Insight & Judgement
+    const insight = v('ps-mse-insight'), judgement = v('ps-mse-judgement');
+    if (insight || judgement) note += `\n  Insight: ${insight||'—'} | Judgement: ${judgement||'—'}`;
+
+    // Risk stratification
+    const si = v('ps-risk-si'), hi = v('ps-risk-hi'), rl = v('ps-risk-level');
+    note += `\n\nRisk :`;
+    if (si) note += `\n  SI: ${si}`;
+    if (hi) note += `\n  HI: ${hi}`;
+    if (rl) note += `\n  Overall: ${rl}`;
+
+    // Screening tools
+    const tools = [
+      ['2Q', 'ps-2q-score', 'ps-2q-result', 'ps-2q-date'],
+      ['9Q', 'ps-9q-score', 'ps-9q-result', 'ps-9q-date'],
+      ['8Q', 'ps-8q-score', 'ps-8q-result', 'ps-8q-date'],
+    ];
+    tools.forEach(([name, scoreId, resultId, dateId]) => {
+      const score = v(scoreId), result = v(resultId), date = v(dateId);
+      if (score || result) note += `\n  ${name}: ${score ? 'Score ' + score + ' — ' : ''}${result || ''}${date ? ' (' + date + ')' : ''}`;
+    });
+    const cogTool = v('ps-cog-tool'), cogScore = v('ps-cog-score'), cogDate = v('ps-cog-date'), cogNotes = v('ps-cog-notes');
+    if (cogTool || cogScore) note += `\n  ${cogTool || 'Cognitive screen'}: ${cogScore ? cogScore + '/30' : ''}${cogDate ? ' (' + cogDate + ')' : ''}${cogNotes ? ' — ' + cogNotes : ''}`;
+    const riskOther = v('ps-risk-other');
+    if (riskOther) note += `\n  ${riskOther.replace(/\n/g, '\n  ')}`;
+
+    // Diagnosis
+    const dxStatus = v('ps-dx-status'), dx = v('ps-dx'), dxExtra = v('ps-dx-extra');
+    note += `\n\nImp (${dxStatus || 'Provisional'}) : ${dx || '—'}`;
+    if (dxExtra) note += `\n${dxExtra.split('\n').map(l => '  ' + l).join('\n')}`;
+
+    // Management
+    const mxItems = [];
+    if (document.getElementById('ps-mx-lsm')?.checked)    mxItems.push('Advise LSM / psychoeducation');
+    if (document.getElementById('ps-mx-remed')?.checked)  mxItems.push('Remedication (same)');
+    if (document.getElementById('ps-mx-change')?.checked) mxItems.push('Change medication: ' + (v('ps-mx-change-txt') || '—'));
+    if (document.getElementById('ps-mx-therapy')?.checked) mxItems.push('Psychotherapy: ' + (v('ps-mx-therapy-txt') || '—'));
+    if (document.getElementById('ps-mx-admit')?.checked)  mxItems.push('Psychiatric admission');
+    if (document.getElementById('ps-mx-crisis')?.checked) mxItems.push('Crisis / safety plan discussed');
+    const mgmtExtra = v('ps-mgmt-extra');
+    if (mgmtExtra) mgmtExtra.split('\n').forEach(l => { if (l.trim()) mxItems.push(l.trim()); });
+    note += `\nMx :${mxItems.length ? '\n' + mxItems.map(m => '- ' + m).join('\n') : ' —'}`;
+    note += `\nPlan : ${v('ps-plan') || '—'}`;
+  }
+
+  else if (type === 'ape') {
+    const ln=v('a-ln'), fn=v('a-fn'), age=v('a-age'), sex=v('a-sex');
+    const adate=fmtDate(v('a-date'))||thDate, md=v('a-md'), purpose=v('a-purpose');
+    const fitness=v('a-fitness');
+    note += `══════════════════════════════════════════════════
+บันทึกการตรวจสุขภาพ (APE)
+วัตถุประสงค์: ${purpose}
+วันที่: ${adate}
+แพทย์ผู้ตรวจ: ${md||'___________'}
+══════════════════════════════════════════════════
+
+ผู้ป่วย: ${[fn,ln].filter(Boolean).join(' ')||'___________'}
+อายุ/เพศ: ${age||'—'} ปี / ${sex||'—'}
+
+สัญญาณชีพ:
+  BP:    ${v('a-bp')||'—'} mmHg
+  HR:    ${v('a-hr')||'—'} ครั้ง/นาที
+  RR:    ${v('a-rr')||'—'} ครั้ง/นาที
+  Temp:  ${v('a-temp')||'—'} °C
+  SpO₂:  ${v('a-spo2')||'—'}%
+  น้ำหนัก: ${v('a-wt')||'—'} กก.  |  ส่วนสูง: ${v('a-ht')||'—'} ซม.  |  BMI: ${document.getElementById('a-bmi').textContent}
+  สายตา (ขวา/ซ้าย): ${v('a-va')||'—'}
+
+การตรวจร่างกาย:
+  ลักษณะทั่วไป:          ${v('a-gen')||'—'}
+  ผิวหนัง:               ${v('a-skin')||'—'}
+  ศีรษะ/ตา/หู/จมูก/ลำคอ: ${v('a-heent')||'—'}
+  ต่อมน้ำเหลือง/ไทรอยด์:  ${v('a-neck')||'—'}
+  หัวใจและหลอดเลือด:     ${v('a-cvs')||'—'}
+  ระบบหายใจ:             ${v('a-resp')||'—'}
+  ช่องท้อง:              ${v('a-abd')||'—'}
+  ระบบสืบพันธุ์:          ${v('a-gu')||'—'}
+  กล้ามเนื้อและกระดูก:    ${v('a-msk')||'—'}
+  ระบบประสาท:            ${v('a-neuro')||'—'}
+  แขนขา:                 ${v('a-ext')||'—'}
+  ทวารหนัก/เต้านม:        ${v('a-rect')||'—'}`;
+
+    const labLines = getLabsFromTable('a-labs-tbody');
+    if (labLines.length) { note += `\n\nผลตรวจห้องปฏิบัติการ:\n` + labLines.join('\n'); }
+
+    note += `\n\nผลสรุป / การวินิจฉัย:\n${v('a-impression')||'(ไม่ระบุ)'}`;
+    if (fitness) note += `\n\nผลการประเมินความสมบูรณ์ทางร่างกาย:\n  ${fitness}`;
+    const reco=v('a-reco'); if (reco) note += `\n\nคำแนะนำ:\n${reco}`;
+
+    note += `\n\n──────────────────────────────────────────────────
+แพทย์ผู้ตรวจ: ${md||'___________'}
+วันที่สร้างบันทึก: ${thDate}
+[กรุณาตรวจสอบข้อมูลทุกรายการก่อนบันทึกใน EMR]
+══════════════════════════════════════════════════`;
+  }
+
+  else if (type === 'er') {
+    const caseType = document.querySelector('input[name="er-case-type"]:checked')?.value || 'non-trauma';
+
+    if (caseType === 'trauma') {
+      const sexRaw = v('et-sex');
+      const sexExport = sexRaw === 'Male' ? 'ช' : (sexRaw === 'Female' ? 'ญ' : '—');
+      const age = v('et-age');
+      const allergy = v('et-allergy') || 'NKDA';
+      const pmhx = v('et-pmhx'), coverage = v('et-coverage');
+
+      note += `ER NOTE — 🩹 TRAUMA`;
+      note += `\n${sexExport} ${age ? age + ' ปี' : '— ปี'} | ${allergy}`;
+      if (pmhx) note += `\nU/D : ${pmhx}`;
+      if (coverage) note += `\nสิทธิ์การรักษา${coverage}`;
+
+      // CC & Mechanism
+      const cc = v('et-cc');
+      const hpi = v('et-mechanism');
+      note += `\n\nCC : ${cc || '—'}`;
+      if (hpi) note += `\n${hpi}`;
+
+      // Primary Survey
+      note += `\n\nPrimary Survey :`;
+
+      const x = v('et-x');
+      note += `\nX : ${x || '—'}`;
+
+      const awNotes = v('et-airway-notes'), cspine = v('et-cspine');
+      const spo2 = v('et-spo2'), o2 = v('et-o2');
+      const aText = awNotes || ([spo2 ? 'SpO₂ '+spo2+'%' : '', o2, v('et-airway')].filter(Boolean).join(', ') || '—');
+      note += `\nA : ${aText}${cspine ? ' | C-spine: '+cspine : ''}`;
+
+      const bNotes = v('et-breathing-notes');
+      const rr = v('et-rr'), bs = v('et-bs');
+      note += `\nB : ${bNotes || (rr ? 'RR '+rr : '—') + (bs ? ', '+bs : '')}`;
+
+      const hr = v('et-hr'), bp = v('et-bp');
+      const cNotes = v('et-c-notes');
+      const efast = v('et-efast'), efastTime = v('et-efast-time');
+      const cText = cNotes || ([hr ? 'P '+hr : '', bp ? 'BP '+bp : '', v('et-crt'), v('et-jvp'), v('et-c-abd'), v('et-longbones')].filter(Boolean).join(', ') || '—');
+      note += `\nC : ${cText}`;
+      if (efast && !cNotes) note += `, ${efast}${efastTime ? ' at '+efastTime : ''}`;
+
+      const dNotes = v('et-neuro-notes'), gcs = v('et-gcs'), pupils = v('et-pupils');
+      const dText = dNotes || ([gcs, pupils].filter(Boolean).join(', ') || '—');
+      note += `\nD : ${dText}`;
+
+      // E
+      const woundLines = etWounds.map((w, i) => {
+        const parts = [w.type, w.location, w.size, w.notes].filter(Boolean).join(', ');
+        return `  Wound ${i+1}: ${parts || '—'}`;
+      });
+      const logroll = v('et-logroll'), pr = v('et-pr-check');
+      if (woundLines.length) {
+        note += `\nE :\n${woundLines.join('\n')}`;
+      } else {
+        note += `\nE : no external wounds`;
+      }
+      if (logroll) note += `\n  Log roll: ${logroll}`;
+      if (pr) note += `\n  PR: ${pr}`;
+
+      // Dx + Mgmt
+      note += `\n\nImp : ${v('et-assess') || '—'}`;
+      const mxItems = buildMxList();
+      note += `\nMx :${mxItems.length ? '\n' + mxItems.map(m => '- ' + m).join('\n') : ' —'}`;
+      const disp = v('et-disposition');
+      const dispTime = v('et-disp-time') || '';
+      if (disp === 'discharge') note += `\nD/C at ${dispTime || '__:__'}`;
+      else if (disp === 'admit') note += `\nAdmit at ${dispTime || '__:__'}`;
+      else if (disp === 'refer') note += `\nRefer`;
+
+      // Consultation
+      const consult = v('et-consult');
+      if (consult) note += `\n\nConsultation :\n${consult}`;
+
+      // Secondary Survey
+      const ssAllergy = v('et-ss-allergy'), ssMeds = v('et-ss-meds');
+      const ssPmhx = v('et-ss-pmhx'), ssLm = v('et-ss-lm'), ssEvent = v('et-ss-event');
+      const ssTetanus = v('et-ss-tetanus');
+      const hasAmple = ssAllergy || ssMeds || ssPmhx || ssLm || ssEvent;
+      if (hasAmple) {
+        note += `\n\nSecondary Survey — AMPLE :`;
+        if (ssAllergy) note += `\nA : ${ssAllergy}`;
+        if (ssMeds)    note += `\nM : ${ssMeds}`;
+        if (ssPmhx)    note += `\nP : ${ssPmhx}`;
+        if (ssLm)      note += `\nL : ${ssLm}`;
+        if (ssTetanus)  note += `\nTetanus : ${ssTetanus}`;
+        if (ssEvent)   note += `\nE : ${ssEvent}`;
+      }
+      const ssHead = v('et-ss-head'), ssNeck = v('et-ss-neck'), ssChest = v('et-ss-chest');
+      const ssAbd = v('et-ss-abd'), ssSpine = v('et-ss-spine'), ssExt = v('et-ss-ext'), ssWounds = v('et-ss-wounds');
+      const hasHtt = ssHead||ssNeck||ssChest||ssAbd||ssSpine||ssExt||ssWounds;
+      if (hasHtt) {
+        note += `\n\nHead-to-toe :`;
+        if (ssHead)   note += `\nHead/Face : ${ssHead}`;
+        if (ssNeck)   note += `\nNeck/C-spine : ${ssNeck}`;
+        if (ssChest)  note += `\nChest : ${ssChest}`;
+        if (ssAbd)    note += `\nAbd/Pelvis : ${ssAbd}`;
+        if (ssSpine)  note += `\nSpine (T/L) : ${ssSpine}`;
+        if (ssExt)    note += `\nExtremities : ${ssExt}`;
+        if (ssWounds) note += `\nWounds :\n${ssWounds}`;
+      }
+    } else {
+      note += `ER NOTE — 🏥 Non-trauma\n(non-trauma algorithm pending)`;
+    }
+  }
+
+  else if (type === 'referral') {
+    const ln=v('r-ln'), fn=v('r-fn'), age=v('r-age'), sex=v('r-sex');
+    const rdate=fmtDate(v('r-date'))||thDate, urgency=v('r-urgency')||'ปกติ';
+    note += `══════════════════════════════════════════════════
+หนังสือส่งตัวผู้ป่วย [${urgency.toUpperCase()}]
+วันที่: ${rdate}
+จาก: ${v('r-from')||'___________'}
+ถึง:  ${v('r-to')||'___________'}
+สถานพยาบาล: ${v('r-facility')||'___________'}
+══════════════════════════════════════════════════
+
+เรียน แพทย์ผู้รับการส่งตัว / ทีมแพทย์ที่เกี่ยวข้อง
+
+ขอส่งตัวผู้ป่วยรายนี้เพื่อรับการประเมินและรักษาต่อ:
+
+ผู้ป่วย: ${[fn,ln].filter(Boolean).join(' ')||'___________'}
+อายุ/เพศ: ${age||'—'} ปี / ${sex||'—'}
+โรคประจำตัว: ${v('r-pmhx')||'—'}
+ยาที่ใช้ประจำ: ${v('r-meds')||'—'}
+
+เหตุผลในการส่งตัว:
+${v('r-reason')||'(ไม่ระบุ)'}
+
+ประวัติที่สำคัญ:
+${v('r-hx')||'(ไม่ระบุ)'}
+
+ผลตรวจที่สำคัญ:
+  สัญญาณชีพ: ${v('r-vitals')||'—'}
+  การตรวจร่างกาย: ${v('r-pe')||'—'}
+
+ผลตรวจห้องปฏิบัติการ / การตรวจพิเศษ:
+${v('r-labs')||'—'}
+
+การรักษาที่ได้รับอยู่:
+${v('r-mgmt')||'—'}
+
+ขอให้ดำเนินการ:
+${v('r-request')||'กรุณาประเมินและให้การรักษาต่อ ขอบคุณที่ดูแลผู้ป่วยรายนี้'}
+
+ขอแสดงความนับถือ
+
+${v('r-from')||'___________'}
+
+──────────────────────────────────────────────────
+วันที่สร้างบันทึก: ${thDate}
+[กรุณาตรวจสอบข้อมูลทุกรายการก่อนบันทึกใน EMR]
+══════════════════════════════════════════════════`;
+  }
+
+  const outputEl = document.getElementById('output-' + type);
+  outputEl.textContent = note;
+  outputEl.classList.remove('empty');
+}
+
+// ============================================================
+// COPY
+// ============================================================
+function copyNote(type) {
+  generateNote(type);
+  const text = document.getElementById('output-' + type).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const toast = document.getElementById('toast');
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 2500);
+  });
+}
+
+function clearNote(type) {
+  const el = document.getElementById('output-' + type);
+  el.textContent = 'กดปุ่ม "สร้างบันทึก" เพื่อดูตัวอย่างบันทึกที่จัดรูปแบบแล้ว...';
+  el.classList.add('empty');
+}
+
+
+
+// ── MSE checkbox toggle (shows detail field) ──────────────────────────────
+
+function clearPsychForm() {
+  if (!confirm('Clear all fields in the Psychiatry form?')) return;
+  // All inputs/textareas/selects with ps- prefix
+  document.querySelectorAll('#tab-psych input, #tab-psych textarea, #tab-psych select').forEach(el => {
+    if (el.type === 'checkbox' || el.type === 'radio') {
+      el.checked = false;
+    } else {
+      el.value = '';
+    }
+  });
+  // Reset toggles
+  const peFields = document.getElementById('ps-pe-fields');
+  if (peFields) peFields.style.display = 'block';
+  const pphxDet = document.getElementById('ps-pphx-detail');
+  if (pphxDet) pphxDet.style.display = 'none';
+  document.querySelectorAll('[id^="ps-per-"][id$="-det"]').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('[id^="ps-pm-"][id$="-det"]').forEach(el => el.style.display = 'none');
+  document.getElementById('ps-bmi').textContent = '—';
+}
+function togglePsychPENormal() {
+  const cb = document.getElementById('ps-pe-normal');
+  const fields = document.getElementById('ps-pe-fields');
+  if (fields) fields.style.display = cb?.checked ? 'none' : 'block';
+}
+function toggleMSECb(id) {
+  const cb  = document.getElementById('ps-' + id);
+  const det = document.getElementById('ps-' + id + '-det');
+  if (det) det.style.display = cb?.checked ? 'block' : 'none';
+}
+// ── Psychiatry helpers ────────────────────────────────────────────────────────
+function toggleSmokePS() {
+  const val = document.querySelector('input[name="ps-smoke"]:checked')?.value;
+  const det = document.getElementById('ps-smoke-detail');
+  if (det) det.style.display = (val === 'current' || val === 'ex') ? 'block' : 'none';
+}
+function toggleDrinkPS() {
+  const val = document.querySelector('input[name="ps-drink"]:checked')?.value;
+  const det = document.getElementById('ps-drink-detail');
+  if (det) det.style.display = (val === 'social' || val === 'regular' || val === 'ex') ? 'block' : 'none';
+}
+function togglePsychHx() {
+  const cb = document.getElementById('ps-pphx-any');
+  const det = document.getElementById('ps-pphx-detail');
+  if (det) det.style.display = cb?.checked ? 'block' : 'none';
+}
+function togglePsMx(id) {
+  const cb = document.getElementById('ps-mx-' + id);
+  const det = document.getElementById('ps-mx-' + id + '-detail');
+  if (det) det.style.display = cb?.checked ? 'block' : 'none';
+}
+function toggleAFWarfarin() {
+  const sel = document.getElementById('o-af-anticoag');
+  const field = document.getElementById('o-af-warfarin-field');
+  if (field) field.style.display = sel?.value === 'Warfarin' ? 'block' : 'none';
+}
+
+function toggleSmoke() {
+  const val = document.querySelector('input[name="o-smoke"]:checked')?.value;
+  const det = document.getElementById('o-smoke-detail');
+  if (det) det.style.display = (val === 'current' || val === 'ex') ? 'block' : 'none';
+}
+
+function toggleDrink() {
+  const val = document.querySelector('input[name="o-drink"]:checked')?.value;
+  const det = document.getElementById('o-drink-detail');
+  if (det) det.style.display = (val === 'social' || val === 'regular' || val === 'ex') ? 'block' : 'none';
+}
+
+const AUTO_PE = {
+  gen:   'alert, cooperative, no pale conjunctivae, no jaundice',
+  resp:  'clear, equal BS',
+  cvs:   'pulse full, regular, CRT <2 s',
+  abd:   'soft, not tender',
+  neuro: 'E4V5M6, oriented to time place and person, pupil 3 mmRTLBE, motor V/V all, sensation intact',
+  ext:   'no rash, no ecchymosis, no petechiae, no pitting edema, no signs of arthritis'
+};
+
+function applyAutoPE(radio) {
+  const fields = ['o-pe-gen','o-pe-resp','o-pe-cvs','o-pe-abd','o-pe-neuro','o-pe-ext'];
+  if (radio._on) {
+    // Toggle OFF: uncheck and clear
+    radio._on = false;
+    radio.checked = false;
+    fields.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  } else {
+    // Toggle ON: fill auto-normal
+    radio._on = true;
+    document.getElementById('o-pe-gen').value   = AUTO_PE.gen;
+    document.getElementById('o-pe-resp').value  = AUTO_PE.resp;
+    document.getElementById('o-pe-cvs').value   = AUTO_PE.cvs;
+    document.getElementById('o-pe-abd').value   = AUTO_PE.abd;
+    document.getElementById('o-pe-neuro').value = AUTO_PE.neuro;
+    document.getElementById('o-pe-ext').value   = AUTO_PE.ext;
+  }
+}
+
+function setCC(val) {
+  document.getElementById('o-cc').value = val;
+}
+
+function toggleNormalSx() {
+  const checked = document.getElementById('o-normal-sx').checked;
+  document.getElementById('o-normal-sx-detail').style.display = checked ? 'block' : 'none';
+}
+
+// Convert a month input value "YYYY-MM" to Thai Buddhist era "MM/YY" (BE = CE+543)
+function fmtMonthYear(s) {
+  if (!s) return null;
+  const [y, m] = s.split('-');
+  const beYY = String(parseInt(y) + 543).slice(-2);
+  return `${m}/${beYY}`;
+}
+
+// Build auto-Dx list for preview and export
+function getAutoDx() {
+  const ncdOrder = ['dm','hpn','dlp','ckd','hf','thyroid','asthma','gout','cva','af'];
+  const ncdLabels = { dm:'T2DM', hpn:'HT', dlp:'DLP', ckd:'CKD', hf:'HF', thyroid:'Dysthyroidism', asthma:'Asthma/COPD', gout:'Gouty arthritis', cva:'Old CVA', af:'AF' };
+  const bmi = parseFloat(document.getElementById('o-bmi')?.textContent);
+  const parts = ncdOrder.filter(n => {
+    const el = document.getElementById('toggle-o-' + n);
+    return el && el.querySelector('input').checked;
+  }).map(n => ncdLabels[n]);
+  // Add BMI-based obesity
+  if (!isNaN(bmi)) {
+    if (bmi >= 30) parts.push('Obesity');
+    else if (bmi >= 25) parts.push('Overweight');
+  }
+  const extra = document.getElementById('o-dx-extra')?.value.trim();
+  if (extra) parts.push(...extra.split(',').map(s => s.trim()).filter(Boolean));
+  return parts;
+}
+
+function updateAutoDxPreview() {
+  const el = document.getElementById('o-auto-dx-preview');
+  if (!el) return;
+  const parts = getAutoDx();
+  el.textContent = parts.length ? parts.join(', ') : '(auto-populated from selected NCDs above)';
+  el.style.fontStyle = parts.length ? 'normal' : 'italic';
+}
+
+// Hook auto-dx preview updates
+
+  // Collapse all cards except Identification on load
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.card').forEach(card => {
+      const header = card.querySelector('.card-header-left');
+      if (!header) return;
+      const text = header.textContent.trim();
+      // Keep Identification cards open; collapse everything else
+      if (!text.includes('Identification') && !text.includes('👤') && !text.includes('👶')) {
+        card.classList.add('collapsed');
+      }
+    });
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+  // Init helpers (no PE pre-fill)
+  renderConsultContacts();
+  renderConsultCheckboxes();
+  renderWounds();
+  updateOncallBtnVisibility();
+
+  // Update preview when NCDs change
+  document.querySelectorAll('.ncd-toggle input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', updateAutoDxPreview);
+  });
+  // Update preview when BMI changes
+  ['o-wt','o-ht'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', () => setTimeout(updateAutoDxPreview, 50));
+  });
+  // Update preview when extra dx changes
+  const dxExtra = document.getElementById('o-dx-extra');
+  if (dxExtra) dxExtra.addEventListener('input', updateAutoDxPreview);
+
+  // Set today's date on date fields
+  const today = new Date().toISOString().split('T')[0];
+  ['o-date','a-date','r-date'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = today;
+  });
+  const dtEl = document.getElementById('e-datetime');
+  if (dtEl) dtEl.value = new Date().toISOString().slice(0,16);
+});
+
+
+
+// ── Specialist contact directory (in-memory) ──────────────────────────────
+const consultContacts = [
+  { spec: 'Surgery', name: '', phone: '' },
+  { spec: 'Orthopaedics', name: '', phone: '' },
+  { spec: 'Neurosurgery', name: '', phone: '' },
+  { spec: 'Cardiology', name: '', phone: '' },
+  { spec: 'Internal Medicine', name: '', phone: '' },
+  { spec: 'Anaesthesia', name: '', phone: '' },
+  { spec: 'Radiology', name: '', phone: '' },
+  { spec: 'ICU', name: '', phone: '' },
+];
+
+function toggleOncallPanel() {
+  const panel = document.getElementById('oncall-panel');
+  const btn   = document.getElementById('oncall-toggle-btn');
+  if (!panel || !btn) return;
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  btn.textContent = isOpen ? '📋 On-call' : '✕ Close';
+}
+
+// Show oncall button only when ER tab is active
+function updateOncallBtnVisibility() {
+  const btn = document.getElementById('oncall-toggle-btn');
+  if (!btn) return;
+  const erActive = document.getElementById('tab-er')?.classList.contains('active');
+  const traumaActive = document.getElementById('er-trauma-page')?.style.display !== 'none';
+  btn.style.display = (erActive && traumaActive) ? 'block' : 'none';
+  if (!erActive) {
+    const panel = document.getElementById('oncall-panel');
+    if (panel) panel.style.display = 'none';
+  }
+}
+
+function renderConsultContacts() {
+  const container = document.getElementById('et-consult-contacts');
+  if (!container) return;
+  container.innerHTML = consultContacts.map((ct, i) => `
+    <div style="background:rgba(255,255,255,0.28);border:1px solid rgba(255,255,255,0.50);border-radius:8px;padding:10px 14px;display:flex;flex-direction:column;gap:3px">
+      <span style="font-size:11px;font-weight:700;text-transform:uppercase;color:rgba(14,116,144,0.75);letter-spacing:0.4px">${ct.spec}</span>
+      <span style="font-size:14px;font-weight:600;color:var(--gray-700)">${ct.name || '<span style="color:var(--gray-400);font-style:italic;font-weight:400">—</span>'}</span>
+      ${ct.phone ? `<a href="tel:${ct.phone}" style="font-size:15px;font-weight:700;color:var(--accent);text-decoration:none">📞 ${ct.phone}</a>` : '<span style="font-size:13px;color:var(--gray-400);font-style:italic">no number</span>'}
+      <div style="display:flex;gap:6px;margin-top:4px">
+        <input type="text" value="${ct.name}" onchange="consultContacts[${i}].name=this.value;renderConsultContacts()" placeholder="Name" style="flex:1;font-size:12px;padding:3px 7px;border:1px solid rgba(255,255,255,0.45);border-radius:5px;background:rgba(255,255,255,0.40);font-family:inherit;color:var(--gray-800)" />
+        <input type="tel" value="${ct.phone}" onchange="consultContacts[${i}].phone=this.value;renderConsultContacts()" placeholder="Phone" style="flex:1;font-size:12px;padding:3px 7px;border:1px solid rgba(255,255,255,0.45);border-radius:5px;background:rgba(255,255,255,0.40);font-family:inherit;color:var(--gray-800)" />
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleAddContact() {
+  const ed = document.getElementById('et-contact-editor');
+  if (ed) ed.style.display = ed.style.display === 'none' ? 'block' : 'none';
+}
+
+function addConsultContact() {
+  const spec  = document.getElementById('et-new-spec')?.value.trim();
+  const name  = document.getElementById('et-new-name')?.value.trim();
+  const phone = document.getElementById('et-new-phone')?.value.trim();
+  if (!spec) return;
+  consultContacts.push({ spec, name, phone });
+  document.getElementById('et-new-spec').value = '';
+  document.getElementById('et-new-name').value = '';
+  document.getElementById('et-new-phone').value = '';
+  renderConsultContacts();
+  renderConsultCheckboxes();
+  renderWounds();
+  updateOncallBtnVisibility();
+}
+
+// Init contacts on DOM load (append to DOMContentLoaded)
+
+// ── Multi-wound list ───────────────────────────────────────────────────────
+const etWounds = [];
+
+function addWound() {
+  const idx = etWounds.length;
+  etWounds.push({ type: '', location: '', size: '', notes: '' });
+  renderWounds();
+}
+
+function removeWound(i) {
+  etWounds.splice(i, 1);
+  renderWounds();
+}
+
+
+function renderConsultCheckboxes() {
+  const container = document.getElementById('et-consult-list');
+  if (!container) return;
+  container.innerHTML = consultContacts.map((ct, i) => `
+    <div style="border:1px solid rgba(255,255,255,0.45);border-radius:var(--radius-sm);padding:10px 14px;background:rgba(255,255,255,0.22)">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:15px;font-weight:600">
+        <input type="checkbox" id="consult-cb-${i}" onchange="toggleConsultReply(${i})" style="width:17px;height:17px;accent-color:var(--accent)">
+        ${ct.spec}${ct.name ? ' — ' + ct.name : ''}
+      </label>
+      <div id="consult-reply-${i}" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.30)">
+        <div class="field">
+          <label>Reply / plan</label>
+          <textarea id="consult-reply-txt-${i}" rows="2" style="border:1px solid rgba(255,255,255,0.48);border-radius:6px;padding:8px 12px;font-size:15px;background:rgba(255,255,255,0.30);font-family:inherit;width:100%;resize:vertical;min-height:60px" placeholder="e.g. Dr. ${ct.name || ct.spec} notified at __:__. Plan: ..."></textarea>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleConsultReply(i) {
+  const cb = document.getElementById('consult-cb-' + i);
+  const div = document.getElementById('consult-reply-' + i);
+  if (div) div.style.display = cb?.checked ? 'block' : 'none';
+}
+
+function buildConsultNotes() {
+  return consultContacts.map((ct, i) => {
+    const cb = document.getElementById('consult-cb-' + i);
+    if (!cb?.checked) return null;
+    const txt = document.getElementById('consult-reply-txt-' + i)?.value.trim() || '';
+    return `${ct.spec}${ct.name ? ' (Dr. ' + ct.name + ')' : ''}: ${txt || '—'}`;
+  }).filter(Boolean);
+}
+
+function renderWounds() {
+  const container = document.getElementById('et-wounds-list');
+  if (!container) return;
+  if (etWounds.length === 0) {
+    container.innerHTML = '<div style="font-size:14px;color:var(--gray-500);font-style:italic;padding:6px 0">No wounds documented</div>';
+    return;
+  }
+  container.innerHTML = etWounds.map((w, i) => `
+    <div style="background:rgba(255,255,255,0.28);border:1px solid rgba(255,255,255,0.50);border-radius:8px;padding:10px 12px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:13px;font-weight:700;color:var(--green)">Wound ${i + 1}</span>
+        <button type="button" onclick="removeWound(${i})" style="font-size:12px;padding:2px 10px;border-radius:12px;border:1px solid rgba(184,48,48,0.35);background:rgba(184,48,48,0.08);color:var(--red);cursor:pointer;font-family:inherit">Remove</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div class="field"><label style="font-size:10.5px">Type</label>
+          <select onchange="etWounds[${i}].type=this.value" style="border:1px solid rgba(255,255,255,0.48);border-radius:6px;padding:7px 10px;font-size:14px;background:rgba(255,255,255,0.30);font-family:inherit;width:100%">
+            <option value="">—</option>
+            <option value="Laceration" ${w.type==='Laceration'?'selected':''}>Laceration</option>
+            <option value="Abrasion" ${w.type==='Abrasion'?'selected':''}>Abrasion</option>
+            <option value="Contusion" ${w.type==='Contusion'?'selected':''}>Contusion</option>
+            <option value="Puncture" ${w.type==='Puncture'?'selected':''}>Puncture</option>
+            <option value="Avulsion" ${w.type==='Avulsion'?'selected':''}>Avulsion</option>
+            <option value="Burn" ${w.type==='Burn'?'selected':''}>Burn</option>
+            <option value="Degloving" ${w.type==='Degloving'?'selected':''}>Degloving</option>
+            <option value="Amputation" ${w.type==='Amputation'?'selected':''}>Amputation</option>
+          </select>
+        </div>
+        <div class="field"><label style="font-size:10.5px">Location</label>
+          <input type="text" value="${w.location}" onchange="etWounds[${i}].location=this.value" placeholder="e.g. R forehead" style="border:1px solid rgba(255,255,255,0.48);border-radius:6px;padding:7px 10px;font-size:14px;background:rgba(255,255,255,0.30);font-family:inherit;width:100%">
+        </div>
+        <div class="field"><label style="font-size:10.5px">Size / Depth</label>
+          <input type="text" value="${w.size}" onchange="etWounds[${i}].size=this.value" placeholder="e.g. 3 × 0.5 cm" style="border:1px solid rgba(255,255,255,0.48);border-radius:6px;padding:7px 10px;font-size:14px;background:rgba(255,255,255,0.30);font-family:inherit;width:100%">
+        </div>
+      </div>
+      <div class="field" style="margin-top:6px"><label style="font-size:10.5px">Additional notes (NV status, contamination, etc.)</label>
+        <input type="text" value="${w.notes}" onchange="etWounds[${i}].notes=this.value" placeholder="e.g. distal NV intact, heavily contaminated" style="border:1px solid rgba(255,255,255,0.48);border-radius:6px;padding:7px 10px;font-size:14px;background:rgba(255,255,255,0.30);font-family:inherit;width:100%">
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── Management checklist toggle ────────────────────────────────────────────
+function toggleMxDetail(id) {
+  const cb = document.getElementById('mx-' + id);
+  const det = document.getElementById('mx-' + id + '-detail');
+  if (det) det.style.display = cb?.checked ? 'block' : 'none';
+}
+
+function buildMxList() {
+  const items = [];
+  if (document.getElementById('mx-ett')?.checked) {
+    const sz = document.getElementById('mx-ett-size')?.value || '?';
+    const dp = document.getElementById('mx-ett-depth')?.value || '?';
+    items.push(`Intubated — ETT No. ${sz} Depth at incisor ${dp} cm`);
+  }
+  if (document.getElementById('mx-collar')?.checked) {
+    items.push('Hard collar applied');
+  }
+  if (document.getElementById('mx-icd')?.checked) {
+    const side = document.getElementById('mx-icd-side')?.value || '?';
+    const mark = document.getElementById('mx-icd-mark')?.value || '?';
+    items.push(`ICD ${side} chest wall, mark ${mark} cm`);
+  }
+  if (document.getElementById('mx-ivf')?.checked) {
+    const type = document.getElementById('mx-ivf-type')?.value || '?';
+    const vol  = document.getElementById('mx-ivf-vol')?.value  || '?';
+    const rate = document.getElementById('mx-ivf-rate')?.value || '';
+    items.push(`${type} ${vol} mL IV${rate ? ' ' + rate : ''}`);
+  }
+  if (document.getElementById('mx-pelvbinder')?.checked) {
+    items.push('Pelvic binder applied');
+  }
+  if (document.getElementById('mx-foley')?.checked) {
+    const sz  = document.getElementById('mx-foley-size')?.value || '';
+    const uop = document.getElementById('mx-foley-uop')?.value || '';
+    items.push(`Foley catheter${sz ? ' ' + sz : ''} inserted${uop ? ' — urine ' + uop : ''}`);
+  }
+  if (document.getElementById('mx-ngt')?.checked) {
+    const sz  = document.getElementById('mx-ngt-size')?.value || '';
+    const asp = document.getElementById('mx-ngt-asp')?.value || '';
+    items.push(`NG tube${sz ? ' ' + sz : ''} inserted${asp ? ' — aspirate: ' + asp : ''}`);
+  }
+  if (document.getElementById('mx-splint')?.checked) {
+    const site = document.getElementById('mx-splint-site')?.value || '';
+    items.push(`Splinting: ${site || 'performed'}`);
+  }
+  if (document.getElementById('mx-pain')?.checked) {
+    const txt = document.getElementById('mx-pain-txt')?.value || '';
+    items.push(`Pain control: ${txt || '—'}`);
+  }
+  if (document.getElementById('mx-dressing')?.checked) {
+    items.push('Wound dressing');
+  }
+  if (document.getElementById('mx-suture')?.checked) {
+    const site = document.getElementById('mx-suture-site')?.value || '';
+    const det  = document.getElementById('mx-suture-detail')?.value || '';
+    items.push(`Suture${site ? ' ' + site : ''}${det ? ': ' + det : ''}`);
+  }
+  if (document.getElementById('mx-dt')?.checked) {
+    items.push('dT 0.5 ml IM stat');
+  }
+  if (document.getElementById('mx-cxr')?.checked) {
+    items.push('CXR');
+  }
+  if (document.getElementById('mx-xpelvis')?.checked) {
+    items.push('Film Pelvis AP');
+  }
+  const free = v('et-mgmt');
+  if (free) free.split('\n').forEach(l => { if (l.trim()) items.push(l.trim()); });
+  return items;
+}
+
+// Init wound list on load
+// ── Collapsible cards ──────────────────────────────────────────────────────
+function toggleCard(header) {
+  const card = header.closest('.card');
+  if (!card) return;
+  card.classList.toggle('collapsed');
+}
+
+// Collapse all cards in a page except the first
+function collapseAllExceptFirst(containerSelector) {
+  const cards = document.querySelectorAll(containerSelector + ' .card');
+  cards.forEach((card, i) => {
+    // Never collapse hidden export cards
+    const body = card.querySelector('.card-body');
+    if (body && body.style.display === 'none') return;
+    if (i > 0) card.classList.add('collapsed');
+  });
+}
+
+// ── Floating export panel ──────────────────────────────────────────────────
+function getActiveOPDType() {
+  const mode = document.getElementById('opd-mode-select')?.value || 'fu';
+  if (mode === 'fu')  return 'opd';
+  if (mode === 'new') return 'new';
+  if (mode === 'ped') return 'ped';
+  return 'opd';
+}
+
+function getActiveType() {
+  // Check which main tab is active
+  const activePanel = document.querySelector('.tab-panel.active');
+  if (!activePanel) return 'opd';
+  const id = activePanel.id;
+  if (id === 'tab-opd')      return getActiveOPDType();
+  if (id === 'tab-psych')    return 'psych';
+  if (id === 'tab-ape')      return 'ape';
+  if (id === 'tab-er')       return 'er';
+  if (id === 'tab-referral') return 'referral';
+  return 'opd';
+}
+
+function openExportPanel() {
+  document.getElementById('export-panel').classList.add('open');
+  document.getElementById('export-overlay').classList.add('show');
+  document.getElementById('float-export-btn').classList.add('panel-open');
+  document.getElementById('float-export-btn').innerHTML = '✕ Close';
+  document.body.classList.add('panel-open');
+  panelGenerate();
+}
+
+function closeExportPanel() {
+  document.getElementById('export-panel').classList.remove('open');
+  document.getElementById('export-overlay').classList.remove('show');
+  document.getElementById('float-export-btn').classList.remove('panel-open');
+  document.getElementById('float-export-btn').innerHTML = '📄 Export';
+  document.body.classList.remove('panel-open');
+}
+
+function toggleExportPanel() {
+  const isOpen = document.getElementById('export-panel').classList.contains('open');
+  isOpen ? closeExportPanel() : openExportPanel();
+}
+
+function panelGenerate() {
+  const type = getActiveType();
+  generateNote(type);
+  // Mirror output to panel
+  const src = document.getElementById('output-' + type);
+  const dest = document.getElementById('panel-output');
+  if (src && dest) {
+    dest.textContent = src.textContent;
+    dest.classList.toggle('empty', src.classList.contains('empty'));
+  }
+}
+
+function panelCopy() {
+  panelGenerate();
+  const dest = document.getElementById('panel-output');
+  const text = dest?.textContent || '';
+  navigator.clipboard.writeText(text).then(() => {
+    const toast = document.getElementById('toast');
+    if (toast) { toast.style.display = 'block'; setTimeout(() => { toast.style.display = 'none'; }, 2500); }
+  });
+}
+
+function panelClear() {
+  const dest = document.getElementById('panel-output');
+  if (dest) {
+    dest.textContent = 'Click ⚡ Generate to preview your note here';
+    dest.classList.add('empty');
+  }
+  // Also clear the underlying output
+  const type = getActiveType();
+  const src = document.getElementById('output-' + type);
+  if (src) { src.textContent = ''; src.classList.add('empty'); }
+}
+
+
+
+// Auto-apply psych background on load
+document.addEventListener('DOMContentLoaded', () => {
+  document.body.style.animation = 'none';
+  document.body.style.background = '#e8ede8';
+  renderConsultContacts();
+  renderConsultCheckboxes();
+  renderWounds();
+});
+</script>
+</body>
+</html>
