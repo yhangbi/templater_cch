@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>intake</title>
+<style>
+  :root{
+    --bg:#F1EBDD;
+    --ink:#221D14;
+    --ink-soft:#8A8071;
+    --line:#E1D8C3;
+    --card:#FAF6EC;
+    --cal:#2B3A67;
+    --pro:#1F6F5C;
+    --danger:#A63D40;
+    --mono: ui-monospace, "SF Mono", "Roboto Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--ink); font-family:var(--sans); height:100%;}
+  body{
+    display:flex; flex-direction:column;
+    max-width:480px; margin:0 auto;
+    min-height:100vh;
+    padding-bottom:130px;
+  }
+  main{
+    flex:1;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    gap:16px;
+    width:100%;
+    padding:8px 20px;
+  }
+
+  /* header */
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:20px 20px 8px;
+  }
+  .brand{font-size:13px; letter-spacing:0.14em; text-transform:uppercase; color:var(--ink-soft); font-weight:600;}
+  .datebar{display:flex; align-items:center; gap:10px;}
+  .datebar button{
+    background:none; border:none; color:var(--ink-soft); font-size:16px; padding:4px 6px; cursor:pointer;
+  }
+  .datebar .label{font-size:14px; font-weight:600; min-width:76px; text-align:center;}
+  .gear{
+    background:none; border:none; cursor:pointer; color:var(--ink-soft); font-size:18px; padding:4px;
+  }
+
+  /* stat cards */
+  .stats{
+    display:flex; flex-direction:column; gap:16px;
+    width:100%;
+  }
+  .stat{
+    background:var(--card); border:1px solid var(--line); border-radius:22px;
+    padding:26px 22px 22px;
+    display:flex; flex-direction:column; align-items:center; text-align:center; gap:8px;
+    width:100%;
+  }
+  .stat .label{
+    font-size:13px; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink-soft); font-weight:700;
+  }
+  .stat .num{
+    font-family:var(--mono); font-variant-numeric:tabular-nums;
+    font-size:min(20vw, 84px); font-weight:700; line-height:1; margin-top:2px;
+  }
+  .stat .unit{font-size:0.32em; font-weight:600; color:var(--ink-soft); margin-left:6px; vertical-align:middle;}
+  .stat .sub{font-size:13px; color:var(--ink-soft); padding-top:4px;}
+  .stat.cal .num{color:var(--cal);}
+  .stat.pro .num{color:var(--pro);}
+  .stat .bar{
+    width:80%; height:5px; background:var(--line); border-radius:3px; overflow:hidden; margin-top:6px;
+  }
+  .stat .bar .fill{height:100%; border-radius:3px; transition:width .25s ease;}
+  .stat.cal .bar .fill{background:var(--cal);}
+  .stat.pro .bar .fill{background:var(--pro);}
+  .stat.over .num{color:var(--danger);}
+  .stat.over .bar .fill{background:var(--danger);}
+
+  /* weight row */
+  .weight{
+    margin:22px 0 0; padding-top:18px; border-top:1px solid var(--line);
+    display:flex; align-items:center; gap:12px;
+  }
+  .weight .wlabel{font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink-soft); font-weight:700; flex:none;}
+  .weight input[type=number]{
+    width:70px; border:none; border-bottom:2px solid var(--line); background:transparent;
+    font-family:var(--mono); font-size:18px; padding:2px 0; color:var(--ink); outline:none;
+  }
+  .weight input[type=number]:focus{border-color:var(--ink);}
+  .weight .savew{
+    background:var(--ink); color:var(--bg); border:none; border-radius:10px; padding:8px 14px;
+    font-size:12px; font-weight:700; letter-spacing:.03em; cursor:pointer;
+  }
+  .weight svg{margin-left:auto; flex:none;}
+  .weight .wnow{font-size:12px; color:var(--ink-soft); margin-left:auto; text-align:right; line-height:1.3;}
+  .weight .wnow b{color:var(--ink); font-size:14px; font-family:var(--mono);}
+
+  /* log */
+  .log{margin:18px 20px 0; flex:1;}
+  .log h2{
+    font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink-soft);
+    margin:0 0 8px 2px; font-weight:700;
+  }
+  .entry{
+    display:flex; align-items:center; gap:10px;
+    padding:11px 4px; border-bottom:1px solid var(--line);
+  }
+  .entry .name{flex:1; font-size:14px; font-weight:500;}
+  .entry .macro{font-family:var(--mono); font-size:13px; color:var(--ink-soft); white-space:nowrap;}
+  .entry .macro b{color:var(--ink); font-weight:600;}
+  .entry .del{
+    background:none; border:none; color:var(--ink-soft); font-size:16px; cursor:pointer; padding:2px 4px; line-height:1;
+  }
+  .empty{color:var(--ink-soft); font-size:13px; padding:14px 4px;}
+
+  /* add button */
+  .addwrap{
+    position:fixed; bottom:0; left:0; right:0;
+    display:flex; justify-content:center;
+    padding:20px 20px calc(20px + env(safe-area-inset-bottom));
+    background:linear-gradient(to top, var(--bg) 55%, transparent);
+    pointer-events:none;
+  }
+  .addwrap .inner{max-width:480px; width:100%; display:flex; justify-content:center; pointer-events:auto;}
+  #addBtn{
+    width:100%; max-width:440px;
+    background:var(--ink); color:var(--bg); border:none; border-radius:18px;
+    font-size:20px; font-weight:800; letter-spacing:.02em;
+    padding:22px; cursor:pointer;
+    box-shadow:0 12px 30px rgba(34,29,20,0.28);
+  }
+  #addBtn:active{transform:scale(0.98);}
+
+  /* modal */
+  .overlay{
+    position:fixed; inset:0; background:rgba(20,24,26,0.4);
+    display:flex; align-items:flex-end; justify-content:center;
+    opacity:0; pointer-events:none; transition:opacity .2s ease;
+    z-index:50;
+  }
+  .overlay.show{opacity:1; pointer-events:auto;}
+  .sheet{
+    background:var(--bg); width:100%; max-width:480px;
+    border-radius:22px 22px 0 0; padding:22px 20px calc(24px + env(safe-area-inset-bottom));
+    transform:translateY(12px); transition:transform .2s ease;
+  }
+  .overlay.show .sheet{transform:translateY(0);}
+  .sheet h3{margin:0 0 16px; font-size:16px; letter-spacing:.01em;}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-soft); font-weight:700; margin-bottom:6px;}
+  .field input{
+    width:100%; border:1px solid var(--line); border-radius:12px; padding:13px 14px;
+    font-size:16px; font-family:var(--sans); background:var(--card); color:var(--ink); outline:none;
+  }
+  .field input:focus{border-color:var(--ink);}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .sheet-actions{display:flex; gap:10px; margin-top:18px;}
+  .sheet-actions button{flex:1; padding:14px; border-radius:12px; font-size:15px; font-weight:700; border:none; cursor:pointer;}
+  .btn-cancel{background:transparent; color:var(--ink-soft); border:1px solid var(--line) !important;}
+  .btn-save{background:var(--ink); color:var(--bg);}
+
+  .settings-note{font-size:12px; color:var(--ink-soft); margin-top:-6px; margin-bottom:16px; line-height:1.5;}
+
+  /* presets */
+  .presets{
+    max-height:38vh; overflow-y:auto;
+    margin-bottom:6px; -webkit-overflow-scrolling:touch;
+  }
+  .preset-row{
+    display:flex; align-items:center; gap:12px;
+    padding:12px 2px; border-bottom:1px solid var(--line);
+    cursor:pointer;
+  }
+  .preset-row:active{background:rgba(34,29,20,0.04);}
+  .preset-row .dot{
+    width:20px; height:20px; border-radius:50%; border:2px solid var(--line);
+    flex:none; transition:border-color .15s ease, background .15s ease;
+  }
+  .preset-row.active .dot{border-color:var(--ink); background:var(--ink);}
+  .preset-row .pname{flex:1; font-size:15px; font-weight:500;}
+  .preset-row .pmacro{font-family:var(--mono); font-size:13px; color:var(--ink-soft); white-space:nowrap;}
+  .divider{
+    display:flex; align-items:center; gap:10px;
+    color:var(--ink-soft); font-size:11px; text-transform:uppercase; letter-spacing:.08em;
+    margin:14px 0 16px;
+  }
+  .divider::before, .divider::after{content:''; flex:1; height:1px; background:var(--line);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">intake</div>
+  <div class="datebar">
+    <button id="prevDay">‹</button>
+    <div class="label" id="dateLabel">today</div>
+    <button id="nextDay">›</button>
+  </div>
+  <button class="gear" id="settingsBtn">⚙</button>
+</header>
+
+<main>
+  <div class="stats">
+    <div class="stat cal" id="calCard">
+      <div class="label">Calories left</div>
+      <div class="num"><span id="calNum">0</span></div>
+      <div class="bar"><div class="fill" id="calFill" style="width:0%"></div></div>
+      <div class="sub" id="calSub">of 0 kcal</div>
+    </div>
+    <div class="stat pro" id="proCard">
+      <div class="label">Protein left</div>
+      <div class="num"><span id="proNum">0</span><span class="unit">g</span></div>
+      <div class="bar"><div class="fill" id="proFill" style="width:0%"></div></div>
+      <div class="sub" id="proSub">of 0 g</div>
+    </div>
+  </div>
+</main>
+
+<div class="log">
+  <h2>Logged today</h2>
+  <div id="entries"></div>
+</div>
+
+<div class="addwrap"><div class="inner">
+  <button id="addBtn">+ Add food</button>
+</div></div>
+
+<!-- Add Food Modal -->
+<div class="overlay" id="addOverlay">
+  <div class="sheet">
+    <h3>Add food</h3>
+    <div class="presets" id="presetList"></div>
+    <div class="divider"><span>or enter manually</span></div>
+    <div class="field">
+      <label>Name (optional)</label>
+      <input type="text" id="foodName" placeholder="e.g. chicken bowl">
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Calories</label>
+        <input type="number" id="foodCal" placeholder="0" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label>Protein (g)</label>
+        <input type="number" id="foodPro" placeholder="0" inputmode="numeric">
+      </div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-cancel" id="cancelAdd">Cancel</button>
+      <button class="btn-save" id="confirmAdd">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="overlay" id="settingsOverlay">
+  <div class="sheet">
+    <h3>Goals</h3>
+    <div class="field">
+      <label>Maintenance calories (TDEE)</label>
+      <input type="number" id="tdeeInput" placeholder="e.g. 2400" inputmode="numeric">
+    </div>
+    <div class="field">
+      <label>Daily deficit (kcal)</label>
+      <input type="number" id="deficitInput" placeholder="e.g. 500" inputmode="numeric">
+    </div>
+    <div class="settings-note" id="targetPreview">Calorie target: —</div>
+    <div class="field">
+      <label>Protein target (g)</label>
+      <input type="number" id="proteinGoalInput" placeholder="e.g. 150" inputmode="numeric">
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-cancel" id="cancelSettings">Close</button>
+      <button class="btn-save" id="saveSettings">Save</button>
+    </div>
+
+    <div class="weight">
+      <div class="wlabel">Weight</div>
+      <input type="number" id="weightInput" placeholder="0.0" step="0.1" inputmode="decimal">
+      <button class="savew" id="saveWeight">Save</button>
+      <svg id="sparkline" width="70" height="30" viewBox="0 0 70 30"></svg>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+function todayISO(offset=0){
+  const d = new Date();
+  d.setDate(d.getDate()+offset);
+  return d.toISOString().slice(0,10);
+}
+
+let currentDate = todayISO(0);
+let dayOffset = 0;
+let settings = { tdee:2400, deficit:500, proteinGoal:150 };
+let entries = [];
+
+async function safeGet(key, shared=false){
+  try{
+    const r = await window.storage.get(key, shared);
+    return r ? r.value : null;
+  }catch(e){ return null; }
+}
+async function safeSet(key, value, shared=false){
+  try{ await window.storage.set(key, value, shared); }catch(e){ console.error(e); }
+}
+async function safeDelete(key, shared=false){
+  try{ await window.storage.delete(key, shared); }catch(e){}
+}
+
+function calorieGoal(){ return Math.max(0, (settings.tdee||0) - (settings.deficit||0)); }
+function proteinGoal(){ return settings.proteinGoal||0; }
+
+function fmtDateLabel(){
+  if(dayOffset===0) return 'today';
+  if(dayOffset===-1) return 'yesterday';
+  const d = new Date(currentDate+'T00:00:00');
+  return d.toLocaleDateString(undefined,{month:'short', day:'numeric'});
+}
+
+async function loadSettings(){
+  const raw = await safeGet('settings');
+  if(raw){
+    try{ settings = JSON.parse(raw); }catch(e){}
+  }
+  $('tdeeInput').value = settings.tdee ?? '';
+  $('deficitInput').value = settings.deficit ?? '';
+  $('proteinGoalInput').value = settings.proteinGoal ?? '';
+  updateTargetPreview();
+}
+
+function updateTargetPreview(){
+  const t = (parseFloat($('tdeeInput').value)||0) - (parseFloat($('deficitInput').value)||0);
+  $('targetPreview').textContent = 'Calorie target: ' + Math.max(0,Math.round(t)) + ' kcal/day';
+}
+
+async function loadDay(){
+  $('dateLabel').textContent = fmtDateLabel();
+  const raw = await safeGet('entries:'+currentDate);
+  entries = raw ? JSON.parse(raw) : [];
+  render();
+  loadWeightForDate();
+  loadSparkline();
+}
+
+async function saveEntries(){
+  await safeSet('entries:'+currentDate, JSON.stringify(entries));
+}
+
+function render(){
+  const totalCal = entries.reduce((s,e)=>s+ (e.cal||0), 0);
+  const totalPro = entries.reduce((s,e)=>s+ (e.pro||0), 0);
+  const cGoal = calorieGoal();
+  const pGoal = proteinGoal();
+  const cLeft = cGoal - totalCal;
+  const pLeft = pGoal - totalPro;
+
+  $('calNum').textContent = Math.round(cLeft);
+  $('calSub').textContent = 'of ' + Math.round(cGoal) + ' kcal · ' + Math.round(totalCal) + ' eaten';
+  $('calFill').style.width = Math.min(100, Math.max(0,(totalCal/Math.max(1,cGoal))*100)) + '%';
+  $('calCard').classList.toggle('over', cLeft < 0);
+
+  $('proNum').textContent = Math.round(pLeft);
+  $('proSub').textContent = 'of ' + Math.round(pGoal) + ' g · ' + Math.round(totalPro) + ' eaten';
+  $('proFill').style.width = Math.min(100, Math.max(0,(totalPro/Math.max(1,pGoal))*100)) + '%';
+  $('proCard').classList.toggle('over', pLeft < 0);
+
+  const list = $('entries');
+  list.innerHTML = '';
+  if(entries.length===0){
+    list.innerHTML = '<div class="empty">Nothing logged yet.</div>';
+  }else{
+    entries.slice().reverse().forEach((e)=>{
+      const realIdx = entries.indexOf(e);
+      const row = document.createElement('div');
+      row.className='entry';
+      row.innerHTML = `<div class="name">${e.name || 'Food'}</div>
+        <div class="macro"><b>${Math.round(e.cal||0)}</b> kcal · <b>${Math.round(e.pro||0)}</b>g</div>
+        <button class="del" data-idx="${realIdx}">✕</button>`;
+      list.appendChild(row);
+    });
+    list.querySelectorAll('.del').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const idx = parseInt(btn.dataset.idx);
+        entries.splice(idx,1);
+        await saveEntries();
+        render();
+      });
+    });
+  }
+}
+
+// Weight
+async function loadWeightForDate(){
+  const raw = await safeGet('weight:'+currentDate);
+  $('weightInput').value = raw ? JSON.parse(raw).w : '';
+  const wnow = document.querySelector('.weight .wnow');
+}
+
+$('saveWeight').addEventListener('click', async ()=>{
+  const v = parseFloat($('weightInput').value);
+  if(isNaN(v)) return;
+  await safeSet('weight:'+currentDate, JSON.stringify({w:v}));
+  loadSparkline();
+});
+
+async function loadSparkline(){
+  const days = [];
+  for(let i=6;i>=0;i--){
+    days.push(todayISO(dayOffset - i));
+  }
+  const vals = [];
+  for(const d of days){
+    const raw = await safeGet('weight:'+d);
+    if(raw){
+      try{ vals.push(JSON.parse(raw).w); }catch(e){ vals.push(null); }
+    } else vals.push(null);
+  }
+  drawSparkline(vals);
+}
+
+function drawSparkline(vals){
+  const svg = $('sparkline');
+  const pts = vals.map((v,i)=>({x:i, y:v})).filter(p=>p.y!=null);
+  svg.innerHTML='';
+  if(pts.length<2) return;
+  const ys = pts.map(p=>p.y);
+  const min = Math.min(...ys), max = Math.max(...ys);
+  const range = (max-min)||1;
+  const w=70,h=30,pad=3;
+  const coords = pts.map(p=>{
+    const x = pad + (p.x/6)*(w-2*pad);
+    const y = h-pad - ((p.y-min)/range)*(h-2*pad);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const path = document.createElementNS('http://www.w3.org/2000/svg','polyline');
+  path.setAttribute('points', coords.join(' '));
+  path.setAttribute('fill','none');
+  path.setAttribute('stroke','#1F6F5C');
+  path.setAttribute('stroke-width','2');
+  path.setAttribute('stroke-linecap','round');
+  path.setAttribute('stroke-linejoin','round');
+  svg.appendChild(path);
+}
+
+// Presets
+const PRESETS = [
+  {name:"Proove Protein Crunch", pro:21, cal:150},
+  {name:"Meiji High Protein Active", pro:32, cal:170},
+  {name:"Meiji Mini", pro:17, cal:100},
+  {name:"Chicken Breast (1pc)", pro:17, cal:90},
+  {name:"Plantae Protein Bar", pro:10, cal:150},
+  {name:"Boiled Egg", pro:6, cal:75},
+  {name:"Prep Ball", pro:20, cal:270},
+  {name:"Plantae Shake", pro:60, cal:360},
+  {name:"เส้นใส่ใจ", pro:27, cal:270},
+];
+
+function renderPresets(){
+  const wrap = $('presetList');
+  wrap.innerHTML = '';
+  PRESETS.forEach((p, i)=>{
+    const row = document.createElement('div');
+    row.className = 'preset-row';
+    row.dataset.idx = i;
+    row.innerHTML = `<div class="dot"></div>
+      <div class="pname">${p.name}</div>
+      <div class="pmacro">${p.pro}g · ${p.cal}kcal</div>`;
+    row.addEventListener('click', ()=>selectPreset(i));
+    wrap.appendChild(row);
+  });
+}
+
+function selectPreset(i){
+  const p = PRESETS[i];
+  $('foodName').value = p.name;
+  $('foodCal').value = p.cal;
+  $('foodPro').value = p.pro;
+  document.querySelectorAll('.preset-row').forEach(r=>r.classList.remove('active'));
+  const row = wrapRowByIdx(i);
+  if(row) row.classList.add('active');
+}
+function wrapRowByIdx(i){
+  return document.querySelector(`.preset-row[data-idx="${i}"]`);
+}
+
+// Add food modal
+function openAdd(){
+  $('foodName').value=''; $('foodCal').value=''; $('foodPro').value='';
+  renderPresets();
+  $('addOverlay').classList.add('show');
+}
+function closeAdd(){ $('addOverlay').classList.remove('show'); }
+
+$('addBtn').addEventListener('click', openAdd);
+$('cancelAdd').addEventListener('click', closeAdd);
+$('addOverlay').addEventListener('click', (e)=>{ if(e.target.id==='addOverlay') closeAdd(); });
+
+$('confirmAdd').addEventListener('click', async ()=>{
+  const cal = parseFloat($('foodCal').value)||0;
+  const pro = parseFloat($('foodPro').value)||0;
+  const name = $('foodName').value.trim();
+  if(cal===0 && pro===0){ closeAdd(); return; }
+  entries.push({name, cal, pro, t: Date.now()});
+  await saveEntries();
+  render();
+  closeAdd();
+});
+
+// Settings modal
+function openSettings(){
+  $('settingsOverlay').classList.add('show');
+  loadWeightForDate();
+  loadSparkline();
+}
+function closeSettings(){ $('settingsOverlay').classList.remove('show'); }
+$('settingsBtn').addEventListener('click', openSettings);
+$('cancelSettings').addEventListener('click', closeSettings);
+$('settingsOverlay').addEventListener('click', (e)=>{ if(e.target.id==='settingsOverlay') closeSettings(); });
+$('tdeeInput').addEventListener('input', updateTargetPreview);
+$('deficitInput').addEventListener('input', updateTargetPreview);
+
+$('saveSettings').addEventListener('click', async ()=>{
+  settings = {
+    tdee: parseFloat($('tdeeInput').value)||0,
+    deficit: parseFloat($('deficitInput').value)||0,
+    proteinGoal: parseFloat($('proteinGoalInput').value)||0
+  };
+  await safeSet('settings', JSON.stringify(settings));
+  render();
+  closeSettings();
+});
+
+// Date nav
+$('prevDay').addEventListener('click', ()=>{
+  dayOffset -= 1;
+  currentDate = todayISO(dayOffset);
+  loadDay();
+});
+$('nextDay').addEventListener('click', ()=>{
+  if(dayOffset>=0) return;
+  dayOffset += 1;
+  currentDate = todayISO(dayOffset);
+  loadDay();
+});
+
+(async function init(){
+  await loadSettings();
+  await loadDay();
+})();
+</script>
+</body>
+</html>
